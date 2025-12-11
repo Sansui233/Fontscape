@@ -16,3 +16,40 @@ export function formatDate(timestamp: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+export const debounce = <T extends unknown[]>(
+  callback: (...args: T) => void,
+  delay: number,
+) => {
+  let timeoutTimer: ReturnType<typeof setTimeout>;
+
+  return (...args: T) => {
+    clearTimeout(timeoutTimer);
+
+    timeoutTimer = setTimeout(() => {
+      callback(...args);
+    }, delay);
+  };
+};
+
+export const debounceWithCallbackRef = <T extends unknown[]>(
+  callback: (...args: T) => void,
+  delay: number,
+) => {
+  let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // 新增：callbackRef 指向“最新的 callback
+  // 否则 debounced 内部闭包会捕获初始的 callback
+  const callbackRef = { current: callback };
+
+  const debounced = (...args: T) => {
+    if (timeoutTimer) clearTimeout(timeoutTimer);
+
+    timeoutTimer = setTimeout(() => {
+      callbackRef.current(...args); // 调用最新 callback
+    }, delay);
+  };
+
+  // 让外部可以更新最新 callback
+  (debounced as any).callbackRef = callbackRef;
+  return debounced as typeof debounced & { callbackRef: typeof callbackRef };
+};

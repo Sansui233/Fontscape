@@ -1,10 +1,56 @@
+import { debounceWithCallbackRef } from "@/lib/utils";
 import { useUIStore } from "@/store/uiStore";
 import { Grid3x3, List, Search, Settings } from "lucide-react";
+import { useCallback, useEffect, useRef } from "react";
 
 export function Topbar() {
   const { viewMode, setViewMode } = useUIStore();
   const store = useUIStore();
   const appName = store.language === 'zh-CN' ? '字体管理器' : 'Font Manager';
+
+  const debouncedSetSearch = useRef(
+    debounceWithCallbackRef((text: string) => {
+      store.setFilters({
+        languages: store.filters.languages,
+        tags: store.filters.tags,
+        searchText: text,
+      });
+    }, 300)
+  ).current;
+
+  // 保证 callback 永远最新
+  useEffect(() => {
+    debouncedSetSearch.callbackRef.current = (text: string) => {
+      store.setFilters({
+        languages: store.filters.languages,
+        tags: store.filters.tags,
+        searchText: text,
+      });
+    };
+  });
+
+  const handleSearchInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const searchText = e.currentTarget.value;
+      debouncedSetSearch(searchText);
+    },
+    []
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        // Execute search immediately on Enter
+        const searchText = e.currentTarget.value;
+        store.setFilters({
+          languages: store.filters.languages,
+          tags: store.filters.tags,
+          searchText,
+        });
+      }
+    },
+    [store.filters]
+  );
 
   return (
     <header className="h-16 border-b border-border bg-background px-6 flex items-center justify-between">
@@ -23,6 +69,8 @@ export function Topbar() {
           <input
             type="text"
             placeholder="Search fonts..."
+            onChange={handleSearchInput}
+            onKeyDown={handleKeyDown}
             className="w-full h-10 pl-10 pr-4 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>

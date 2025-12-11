@@ -25,25 +25,25 @@ export type FontStatus = 'Enabled' | 'Disabled' | 'SystemFont';
 export interface FontMetadata {
   // OpenType Name IDs (0-20)
   copyright?: string;             // ID 0
-  familyName?: string;            // ID 1
-  subfamilyName?: string;         // ID 2
-  uniqueIdentifier?: string;      // ID 3
-  fullName?: string;              // ID 4
+  family_name?: string;            // ID 1
+  subfamily_name?: string;         // ID 2
+  unique_identifier?: string;      // ID 3
+  full_name?: string;              // ID 4
   version?: string;               // ID 5
-  postscriptName?: string;        // ID 6
+  postscript_name?: string;        // ID 6
   trademark?: string;             // ID 7
   manufacturer?: string;          // ID 8
   designer?: string;              // ID 9
   description?: string;           // ID 10
-  vendorUrl?: string;             // ID 11
-  designerUrl?: string;           // ID 12
+  vendor_url?: string;             // ID 11
+  designer_url?: string;           // ID 12
   license?: string;               // ID 13
-  licenseUrl?: string;            // ID 14
-  typographicFamily?: string;     // ID 16
-  typographicSubfamily?: string;  // ID 17
-  compatibleFull?: string;        // ID 18
-  sampleText?: string;            // ID 19
-  postscriptCid?: string;         // ID 20
+  license_url?: string;            // ID 14
+  typographic_family?: string;     // ID 16
+  typographic_subfamily?: string;  // ID 17
+  compatible_full?: string;        // ID 18
+  sample_text?: string;            // ID 19
+  postscript_cid?: string;         // ID 20
 }
 
 export interface FontCategory {

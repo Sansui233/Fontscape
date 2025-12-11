@@ -83,6 +83,8 @@ export function FontCard({ font }: FontCardProps) {
         onClick={() => {
           if (multiSelectMode) {
             toggleFontSelection(font.id);
+          } else {
+            setShowInfoModal(true);
           }
         }}
         className={`

@@ -60,7 +60,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
                 Categories
               </h2>
               <ul className="space-y-1">
-                <SidebarItem label="All Fonts" count={fonts.length} onClick={() => { store.setFilters({ languages: [], tags: [] }) }} />
+                <SidebarItem label="All Fonts" count={fonts.length} onClick={() => { store.setFilters({ languages: [], tags: [], searchText: store.filters.searchText }) }} />
                 <SidebarItem label="Recently Added" count={0} />
                 <SidebarItem label="Favorites" count={0} />
               </ul>
@@ -72,10 +72,10 @@ export function Sidebar({ collapsed }: SidebarProps) {
                 Languages
               </h2>
               <ul className="space-y-1">
-                <SidebarItem label="Unknown" count={countByLanguage("Unknown")} onClick={() => { store.setFilters({ languages: ["Unknown"], tags: [] }) }} />
-                <SidebarItem label="Chinese" count={countByLanguage("Chinese")} onClick={() => { store.setFilters({ languages: ["Chinese"], tags: [] }) }} />
-                <SidebarItem label="English" count={countByLanguage("English")} onClick={() => { store.setFilters({ languages: ["English"], tags: [] }) }} />
-                <SidebarItem label="Japanese" count={countByLanguage("Japanese")} onClick={() => { store.setFilters({ languages: ["Japanese"], tags: [] }) }} />
+                <SidebarItem label="Unknown" count={countByLanguage("Unknown")} onClick={() => { store.setFilters({ languages: ["Unknown"], tags: [], searchText: store.filters.searchText }) }} />
+                <SidebarItem label="Chinese" count={countByLanguage("Chinese")} onClick={() => { store.setFilters({ languages: ["Chinese"], tags: [], searchText: store.filters.searchText }) }} />
+                <SidebarItem label="English" count={countByLanguage("English")} onClick={() => { store.setFilters({ languages: ["English"], tags: [], searchText: store.filters.searchText }) }} />
+                <SidebarItem label="Japanese" count={countByLanguage("Japanese")} onClick={() => { store.setFilters({ languages: ["Japanese"], tags: [], searchText: store.filters.searchText }) }} />
               </ul>
             </div>
 

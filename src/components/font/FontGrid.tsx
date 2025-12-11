@@ -14,6 +14,7 @@ export function FontGrid({ fonts }: FontGridProps) {
   const filtered_fonts = useMemo(() => {
     const filters = store.filters ?? {};
     const langFilters = Array.isArray(filters.languages) ? filters.languages : [];
+    const searchText = filters.searchText?.toLowerCase().trim() || '';
     // const tagFilters = Array.isArray(filters.tags) ? filters.tags : [];
 
     return fonts.filter((font) => {
@@ -25,6 +26,25 @@ export function FontGrid({ fonts }: FontGridProps) {
       // if (tagFilters.length > 0 && !tagFilters.every((t) => (font.tags ?? []).includes(t))) {
       //   return false;
       // }
+
+      // Search filter: check if searchText is included in family, full_name, family_zh, or full_name_zh
+      if (searchText) {
+        const family = font.family?.toLowerCase() || '';
+        const fullName = font.full_name?.toLowerCase() || '';
+        const familyZh = font.family_zh?.toLowerCase() || '';
+        const fullNameZh = font.full_name_zh?.toLowerCase() || '';
+
+        const matchesSearch =
+          family.includes(searchText) ||
+          fullName.includes(searchText) ||
+          familyZh.includes(searchText) ||
+          fullNameZh.includes(searchText);
+
+        if (!matchesSearch) {
+          return false;
+        }
+      }
+
       return true;
     });
   }, [store.filters, fonts]);

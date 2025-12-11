@@ -22,8 +22,9 @@ interface UIStore {
   filters: {
     languages: string[];
     tags: string[];
+    searchText: string;
   };
-  setFilters: (filters: { languages: string[]; tags: string[] }) => void;
+  setFilters: (filters: { languages: string[]; tags: string[]; searchText: string }) => void;
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -54,6 +55,6 @@ export const useUIStore = create<UIStore>((set) => ({
   selectAll: (fontIds) => set({ selectedFontIds: new Set(fontIds) }),
   language: 'zh-CN',
   setLanguage: (lang) => set({ language: lang }),
-  filters: { languages: [], tags: [] },
+  filters: { languages: [], tags: [], searchText: '' },
   setFilters: (f) => set({ filters: f }),
 }));
