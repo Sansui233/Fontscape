@@ -1,10 +1,8 @@
 // Prevents additional console window on Windows in release
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod commands;
-mod font;
-
-use commands::*;
+// Use the library crate
+use font_manager::commands::*;
 
 fn main() {
     tauri::Builder::default()

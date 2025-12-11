@@ -1136,6 +1136,497 @@ export function FontDetail({ fontId }: { fontId: string }) {
 }
 ```
 
+### 5.7 右键菜单（Context Menu）
+
+#### 5.7.1 设计目标
+
+为字体卡片提供右键菜单，支持快速操作：
+- **Info**：查看字体详细信息
+- **Multi-select**：进入多选模式，批量操作字体
+- **Disable/Enable**：启用或禁用字体
+
+#### 5.7.2 交互设计
+
+**触发方式**：
+- 右键点击字体卡片
+- 菜单显示在鼠标位置附近
+- 点击菜单外部或按 ESC 关闭菜单
+
+**菜单选项**：
+
+1. **Info（信息）**
+   - 图标：ℹ️ 信息图标
+   - 功能：打开字体详情页面/模态框
+   - 显示字体的完整元数据、预览模板
+
+2. **Multi-select（多选）**
+   - 图标：☑️ 多选图标
+   - 功能：
+     - 进入多选模式
+     - 在卡片上显示复选框
+     - 允许批量选择多个字体
+     - 显示批量操作工具栏（批量启用/禁用/删除）
+   - 退出：点击工具栏的"完成"按钮
+
+3. **Disable/Enable（禁用/启用）**
+   - 图标：🚫 禁用图标 / ✅ 启用图标
+   - 功能：切换字体的启用状态
+   - 动态文本：
+     - 如果字体已启用 → 显示"Disable"
+     - 如果字体已禁用 → 显示"Enable"
+   - 系统字体：禁用此选项（灰色，不可点击）
+
+#### 5.7.3 实现架构
+
+**组件结构**：
+
+```
+FontCard
+├── [右键事件处理]
+└── ContextMenu
+    ├── MenuItem (Info)
+    ├── MenuItem (Multi-select)
+    └── MenuItem (Disable/Enable)
+```
+
+**状态管理**：
+
+```typescript
+// Store: uiStore.ts
+interface UIStore {
+  // ... 现有状态
+  multiSelectMode: boolean;          // 是否处于多选模式
+  selectedFontIds: Set<string>;      // 已选中的字体ID列表
+  setMultiSelectMode: (mode: boolean) => void;
+  toggleFontSelection: (fontId: string) => void;
+  clearSelection: () => void;
+  selectAll: () => void;
+}
+```
+
+#### 5.7.4 前端实现
+
+**文件**: `src/components/ui/ContextMenu.tsx`
+
+```typescript
+import { useEffect, useRef } from 'react';
+
+interface ContextMenuProps {
+  x: number;
+  y: number;
+  onClose: () => void;
+  items: ContextMenuItem[];
+}
+
+interface ContextMenuItem {
+  label: string;
+  icon?: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;  // 危险操作（红色）
+}
+
+export function ContextMenu({ x, y, onClose, items }: ContextMenuProps) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // 点击外部关闭
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    }
+
+    // ESC 键关闭
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [onClose]);
+
+  // 调整菜单位置，确保不超出视口
+  const adjustedPosition = {
+    x: Math.min(x, window.innerWidth - 200),
+    y: Math.min(y, window.innerHeight - items.length * 40 - 20),
+  };
+
+  return (
+    <div
+      ref={menuRef}
+      className="fixed z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[160px]"
+      style={{
+        left: `${adjustedPosition.x}px`,
+        top: `${adjustedPosition.y}px`,
+      }}
+    >
+      {items.map((item, index) => (
+        <button
+          key={index}
+          onClick={() => {
+            if (!item.disabled) {
+              item.onClick();
+              onClose();
+            }
+          }}
+          disabled={item.disabled}
+          className={`
+            w-full px-4 py-2 text-left text-sm flex items-center gap-2
+            hover:bg-accent transition-colors
+            disabled:opacity-50 disabled:cursor-not-allowed
+            ${item.danger ? 'text-destructive' : 'text-foreground'}
+          `}
+        >
+          {item.icon && <span className="w-4 h-4">{item.icon}</span>}
+          <span>{item.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+**文件**: `src/components/font/FontCard.tsx` (更新)
+
+```typescript
+import { useState } from "react";
+import { Info, CheckSquare, Ban, Check } from "lucide-react";
+import { FontInfo } from "@/types/font";
+import { useUIStore } from "@/store/uiStore";
+import { toggleFont } from "@/lib/tauri-api";
+import { useFontStore } from "@/store/fontStore";
+import { ContextMenu } from "@/components/ui/ContextMenu";
+
+interface FontCardProps {
+  font: FontInfo;
+}
+
+export function FontCard({ font }: FontCardProps) {
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [isToggling, setIsToggling] = useState(false);
+
+  const updateFontStatus = useFontStore((state) => state.updateFontStatus);
+  const { multiSelectMode, selectedFontIds, toggleFontSelection } = useUIStore();
+  const setMultiSelectMode = useUIStore((state) => state.setMultiSelectMode);
+
+  // 右键菜单处理
+  function handleContextMenu(e: React.MouseEvent) {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  }
+
+  // 禁用/启用字体
+  async function handleToggleFont() {
+    if (font.status === "SystemFont") return;
+
+    setIsToggling(true);
+    try {
+      const newStatus = font.status === "Enabled" ? "Disabled" : "Enabled";
+      await toggleFont(font.id, newStatus === "Enabled");
+      updateFontStatus(font.id, newStatus);
+    } catch (error) {
+      console.error("Failed to toggle font:", error);
+    } finally {
+      setIsToggling(false);
+    }
+  }
+
+  // 上下文菜单项
+  const menuItems = [
+    {
+      label: "Info",
+      icon: <Info className="w-4 h-4" />,
+      onClick: () => {
+        // TODO: 打开字体详情页面
+        console.log("Show info for", font.id);
+      },
+    },
+    {
+      label: "Multi-select",
+      icon: <CheckSquare className="w-4 h-4" />,
+      onClick: () => {
+        setMultiSelectMode(true);
+        toggleFontSelection(font.id);
+      },
+    },
+    {
+      label: font.status === "Enabled" ? "Disable" : "Enable",
+      icon: font.status === "Enabled"
+        ? <Ban className="w-4 h-4" />
+        : <Check className="w-4 h-4" />,
+      onClick: handleToggleFont,
+      disabled: font.status === "SystemFont" || isToggling,
+      danger: font.status === "Enabled",
+    },
+  ];
+
+  const isSelected = selectedFontIds.has(font.id);
+
+  return (
+    <>
+      <div
+        onContextMenu={handleContextMenu}
+        onClick={() => {
+          if (multiSelectMode) {
+            toggleFontSelection(font.id);
+          }
+        }}
+        className={`
+          group relative overflow-hidden rounded-lg border bg-card p-6
+          transition-all hover:shadow-lg hover:border-primary
+          ${isSelected ? 'ring-2 ring-primary border-primary' : 'border-border'}
+          ${multiSelectMode ? 'cursor-pointer' : ''}
+        `}
+      >
+        {/* 多选模式：复选框 */}
+        {multiSelectMode && (
+          <div className="absolute top-3 left-3">
+            <div className={`
+              w-5 h-5 rounded border-2 flex items-center justify-center
+              ${isSelected ? 'bg-primary border-primary' : 'border-muted-foreground'}
+            `}>
+              {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+            </div>
+          </div>
+        )}
+
+        {/* 状态指示器 */}
+        <div className="absolute top-3 right-3">
+          <div
+            className={`h-2 w-2 rounded-full ${
+              font.status === 'Enabled' ? 'bg-green-500' :
+              font.status === 'Disabled' ? 'bg-gray-400' :
+              'bg-blue-500'
+            }`}
+            title={font.status}
+          />
+        </div>
+
+        {/* 字体预览 - 使用字体家族名称 */}
+        <div className="mb-4 overflow-hidden">
+          <div
+            className="transition-all text-2xl"
+            style={{
+              fontFamily: `"${font.family}", sans-serif`,
+            }}
+          >
+            {font.family}
+          </div>
+        </div>
+
+        {/* 字体信息 */}
+        <div className="space-y-1">
+          <h3 className="font-semibold text-foreground truncate" title={font.fullName}>
+            {font.family}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {font.style} • {font.format}
+          </p>
+          <div className="flex flex-wrap gap-1 mt-2">
+            {font.languages.slice(0, 3).map((lang) => (
+              <span
+                key={lang}
+                className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground"
+              >
+                {lang}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 右键菜单 */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          items={menuItems}
+        />
+      )}
+    </>
+  );
+}
+```
+
+**文件**: `src/store/uiStore.ts` (更新)
+
+```typescript
+import { create } from 'zustand';
+
+type ViewMode = 'grid' | 'list';
+
+interface UIStore {
+  viewMode: ViewMode;
+  previewSize: number;
+  previewText: string;
+  sidebarCollapsed: boolean;
+  multiSelectMode: boolean;
+  selectedFontIds: Set<string>;
+
+  setViewMode: (mode: ViewMode) => void;
+  setPreviewSize: (size: number) => void;
+  setPreviewText: (text: string) => void;
+  toggleSidebar: () => void;
+  setMultiSelectMode: (mode: boolean) => void;
+  toggleFontSelection: (fontId: string) => void;
+  clearSelection: () => void;
+  selectAll: (fontIds: string[]) => void;
+}
+
+export const useUIStore = create<UIStore>((set) => ({
+  viewMode: 'grid',
+  previewSize: 24,
+  previewText: '', // 空字符串表示使用字体家族名称
+  sidebarCollapsed: false,
+  multiSelectMode: false,
+  selectedFontIds: new Set(),
+
+  setViewMode: (mode) => set({ viewMode: mode }),
+  setPreviewSize: (size) => set({ previewSize: size }),
+  setPreviewText: (text) => set({ previewText: text }),
+  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+
+  setMultiSelectMode: (mode) => set({
+    multiSelectMode: mode,
+    selectedFontIds: mode ? new Set() : new Set(),
+  }),
+
+  toggleFontSelection: (fontId) => set((state) => {
+    const newSet = new Set(state.selectedFontIds);
+    if (newSet.has(fontId)) {
+      newSet.delete(fontId);
+    } else {
+      newSet.add(fontId);
+    }
+    return { selectedFontIds: newSet };
+  }),
+
+  clearSelection: () => set({ selectedFontIds: new Set() }),
+
+  selectAll: (fontIds) => set({ selectedFontIds: new Set(fontIds) }),
+}));
+```
+
+#### 5.7.5 多选模式工具栏
+
+当进入多选模式时，在顶部显示工具栏：
+
+**文件**: `src/components/font/MultiSelectToolbar.tsx`
+
+```typescript
+import { X, Trash2, Check, Ban } from "lucide-react";
+import { useUIStore } from "@/store/uiStore";
+import { useFontStore } from "@/store/fontStore";
+
+export function MultiSelectToolbar() {
+  const { selectedFontIds, setMultiSelectMode, clearSelection } = useUIStore();
+  const fonts = useFontStore((state) => state.fonts);
+
+  const selectedCount = selectedFontIds.size;
+
+  function handleExit() {
+    setMultiSelectMode(false);
+    clearSelection();
+  }
+
+  function handleEnableAll() {
+    // TODO: 批量启用字体
+    console.log("Enable fonts:", Array.from(selectedFontIds));
+  }
+
+  function handleDisableAll() {
+    // TODO: 批量禁用字体
+    console.log("Disable fonts:", Array.from(selectedFontIds));
+  }
+
+  return (
+    <div className="sticky top-0 z-10 bg-primary text-primary-foreground px-6 py-3 flex items-center justify-between shadow-md">
+      <div className="flex items-center gap-4">
+        <button
+          onClick={handleExit}
+          className="p-2 hover:bg-primary-foreground/20 rounded-lg transition-colors"
+          title="Exit multi-select"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        <span className="font-medium">
+          {selectedCount} {selectedCount === 1 ? 'font' : 'fonts'} selected
+        </span>
+      </div>
+
+      {selectedCount > 0 && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleEnableAll}
+            className="px-4 py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <Check className="w-4 h-4" />
+            Enable
+          </button>
+          <button
+            onClick={handleDisableAll}
+            className="px-4 py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <Ban className="w-4 h-4" />
+            Disable
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+#### 5.7.6 侧边栏更新 - 添加 Unknown 语言
+
+**文件**: `src/components/layout/Sidebar.tsx` (更新)
+
+```typescript
+// 语言过滤部分添加 Unknown 选项
+<FilterSection title="Language">
+  <FilterOption label="Unknown" value="Unknown" />
+  <FilterOption label="中文" value="Chinese" />
+  <FilterOption label="English" value="English" />
+  <FilterOption label="日本語" value="Japanese" />
+  <FilterOption label="한국어" value="Korean" />
+</FilterSection>
+```
+
+#### 5.7.7 技术细节
+
+**右键菜单定位算法**：
+```typescript
+// 确保菜单不超出视口
+const adjustedPosition = {
+  x: Math.min(x, window.innerWidth - menuWidth),
+  y: Math.min(y, window.innerHeight - menuHeight),
+};
+
+// 如果靠近屏幕底部，向上显示
+if (y + menuHeight > window.innerHeight) {
+  adjustedPosition.y = y - menuHeight;
+}
+```
+
+**性能优化**：
+- 使用 `React.memo` 优化 ContextMenu 组件
+- 多选模式下使用 Set 存储选中ID（O(1)查找）
+- 批量操作使用 Promise.all 并行处理
+
+**键盘快捷键**（未来扩展）：
+- `Ctrl + A`: 全选
+- `Escape`: 退出多选模式
+- `Delete`: 删除选中字体
+
 ---
 
 ## 6. 性能优化策略

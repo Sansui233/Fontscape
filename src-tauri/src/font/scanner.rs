@@ -159,12 +159,27 @@ impl FontScanner {
         metadata: &std::fs::Metadata,
         format: FontFormat,
     ) -> Result<FontInfo, String> {
-        // Extract font names with fallbacks
+        // Extract font names with fallbacks (English)
         let family = Self::extract_name_with_fallback(face, ttf_parser::name_id::FAMILY);
         let full_name = Self::extract_name_with_fallback(face, ttf_parser::name_id::FULL_NAME);
         let postscript_name = Self::extract_name_with_fallback(face, ttf_parser::name_id::POST_SCRIPT_NAME);
         let style = Self::extract_name(face, ttf_parser::name_id::SUBFAMILY)
             .unwrap_or_else(|| "Regular".to_string());
+
+        // Extract Chinese (PRC) localized names - language_id = 0x0804
+        let mut family_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FAMILY, 0x0804);
+        let mut full_name_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FULL_NAME, 0x0804);
+        // If not found try language_id = 0x0c04 (Hong Kong)
+        if family_zh.is_none() {
+            family_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FAMILY, 0x1004);
+            full_name_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FULL_NAME, 0x1004);
+        }
+        // If still not found, try Taiwan (0x0404)
+        if family_zh.is_none() {
+            family_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FAMILY, 0x0404);
+            full_name_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FULL_NAME, 0x0404);
+        }
+
 
         // Generate unique ID
         let id_source = format!("{}-{}-{}", path.to_string_lossy(), family, style);
@@ -183,6 +198,7 @@ impl FontScanner {
         // Extract metadata
         let font_metadata = Self::extract_metadata(face);
 
+        
         Ok(FontInfo {
             id,
             family,
@@ -201,20 +217,24 @@ impl FontScanner {
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .unwrap()
                 .as_secs() as i64,
+            family_zh,
+            full_name_zh
         })
     }
 
     /// Extract name from font with multiple attempts
-    fn extract_name(face: &ttf_parser::Face, name_id: u16) -> Option<String> {
+    /// name_id: OpenType Name ID
+    /// see https://docs.rs/ttf-parser/latest/ttf_parser/name/struct.Name.html
+    fn extract_name(face: &ttf_parser::Face, ot_name_id: u16) -> Option<String> {
         // Priority order: English, then any Unicode
         let mut fallback = None;
 
-        for name in face.names() {
-            if name.name_id == name_id {
-                if name.is_unicode() {
-                    if let Some(s) = name.to_string() {
+        for face_name in face.names() {
+            if face_name.name_id == ot_name_id {
+                if face_name.is_unicode() {
+                    if let Some(s) = face_name.to_string() {
                         // Prefer English (language_id == 0x0409)
-                        if name.language_id == 0x0409 {
+                        if face_name.language_id == 0x0409 {
                             return Some(s);
                         }
                         // Store first Unicode name as fallback
@@ -227,6 +247,20 @@ impl FontScanner {
         }
 
         fallback
+    }
+
+    /// Extract ot name for specific language
+    fn extract_name_by_language(face: &ttf_parser::Face, name_id: u16, language_id: u16) -> Option<String> {
+        for name in face.names() {
+            if name.name_id == name_id && name.language_id == language_id {
+                if name.is_unicode() {
+                    if let Some(s) = name.to_string() {
+                        return Some(s);
+                    }
+                }
+            }
+        }
+        None
     }
 
     /// Extract name with fallback to family name
@@ -242,15 +276,41 @@ impl FontScanner {
         })
     }
 
-    /// Extract font metadata
+    /// Extract font metadata from OpenType/TrueType naming table
+    ///
+    /// This function extracts standardized OpenType Name IDs (0-20+).
+    /// Supports:
+    /// - TrueType (.ttf): Full naming table support
+    /// - OpenType (.otf): Full naming table support
+    /// - TrueType Collection (.ttc): Per-face naming table
+    ///
+    /// Note: Both TrueType and OpenType fonts use the same naming table format,
+    /// so metadata extraction is uniform across these formats.
     fn extract_metadata(face: &ttf_parser::Face) -> FontMetadata {
         FontMetadata {
-            version: Self::extract_name(face, ttf_parser::name_id::VERSION),
-            designer: Self::extract_name(face, ttf_parser::name_id::DESIGNER),
-            manufacturer: Self::extract_name(face, ttf_parser::name_id::MANUFACTURER),
-            license: Self::extract_name(face, ttf_parser::name_id::LICENSE),
-            copyright: Self::extract_name(face, ttf_parser::name_id::COPYRIGHT_NOTICE),
-            description: Self::extract_name(face, ttf_parser::name_id::DESCRIPTION),
+            // Standard Name IDs (0-14) - Available in most fonts
+            copyright: Self::extract_name(face, ttf_parser::name_id::COPYRIGHT_NOTICE),         // 0
+            family_name: Self::extract_name(face, ttf_parser::name_id::FAMILY),                 // 1
+            subfamily_name: Self::extract_name(face, ttf_parser::name_id::SUBFAMILY),           // 2
+            unique_identifier: Self::extract_name(face, ttf_parser::name_id::UNIQUE_ID),        // 3
+            full_name: Self::extract_name(face, ttf_parser::name_id::FULL_NAME),                // 4
+            version: Self::extract_name(face, ttf_parser::name_id::VERSION),                    // 5
+            postscript_name: Self::extract_name(face, ttf_parser::name_id::POST_SCRIPT_NAME),   // 6
+            trademark: Self::extract_name(face, ttf_parser::name_id::TRADEMARK),                // 7
+            manufacturer: Self::extract_name(face, ttf_parser::name_id::MANUFACTURER),          // 8
+            designer: Self::extract_name(face, ttf_parser::name_id::DESIGNER),                  // 9
+            description: Self::extract_name(face, ttf_parser::name_id::DESCRIPTION),            // 10
+            vendor_url: Self::extract_name(face, ttf_parser::name_id::VENDOR_URL),              // 11
+            designer_url: Self::extract_name(face, ttf_parser::name_id::DESIGNER_URL),          // 12
+            license: Self::extract_name(face, ttf_parser::name_id::LICENSE),                    // 13
+            license_url: Self::extract_name(face, ttf_parser::name_id::LICENSE_URL),            // 14
+
+            // Extended Name IDs (16-20) - May not be present in all fonts
+            typographic_family: Self::extract_name(face, 16),                                   // 16 - Preferred Family
+            typographic_subfamily: Self::extract_name(face, 17),                                // 17 - Preferred Subfamily
+            compatible_full: Self::extract_name(face, 18),                                      // 18 - Compatible Full Name
+            sample_text: Self::extract_name(face, 19),                                          // 19 - Sample Text
+            postscript_cid: Self::extract_name(face, 20),                                       // 20 - PostScript CID
         }
     }
 
@@ -303,10 +363,10 @@ impl FontScanner {
             scripts.push("Arab".to_string());
         }
 
-        // If no languages detected at all, assume basic Latin
+        // If no languages detected at all, mark as Unknown
         if languages.is_empty() {
-            languages.push("English".to_string());
-            scripts.push("Latn".to_string());
+            languages.push("Unknown".to_string());
+            scripts.push("Unknown".to_string());
         }
 
         (languages, scripts)
@@ -328,5 +388,36 @@ impl FontScanner {
 impl Default for FontScanner {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Unit test: System font detection logic
+    #[test]
+    fn test_system_font_detection() {
+        assert!(FontScanner::is_system_font("Segoe UI"));
+        assert!(FontScanner::is_system_font("Microsoft YaHei"));
+        assert!(FontScanner::is_system_font("SimSun"));
+        assert!(FontScanner::is_system_font("Tahoma"));
+        assert!(!FontScanner::is_system_font("Arial"));
+        assert!(!FontScanner::is_system_font("Times New Roman"));
+        assert!(!FontScanner::is_system_font("Helvetica"));
+    }
+
+    /// Unit test: Font file extension detection
+    #[test]
+    fn test_is_font_file() {
+        use std::path::PathBuf;
+
+        assert!(FontScanner::is_font_file(&PathBuf::from("test.ttf")));
+        assert!(FontScanner::is_font_file(&PathBuf::from("test.otf")));
+        assert!(FontScanner::is_font_file(&PathBuf::from("test.ttc")));
+        assert!(FontScanner::is_font_file(&PathBuf::from("TEST.TTF"))); // Case insensitive
+        assert!(!FontScanner::is_font_file(&PathBuf::from("test.txt")));
+        assert!(!FontScanner::is_font_file(&PathBuf::from("test.pdf")));
+        assert!(!FontScanner::is_font_file(&PathBuf::from("test")));
     }
 }

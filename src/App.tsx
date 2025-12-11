@@ -1,9 +1,18 @@
-import { AppLayout } from "./components/layout/AppLayout";
+import { useEffect } from "react";
 import { FontGrid } from "./components/font/FontGrid";
+import { AppLayout } from "./components/layout/AppLayout";
 import { useFonts } from "./hooks/useFonts";
+import { useUIStore } from "./store/uiStore";
 
 function App() {
   const { fonts, isLoading } = useFonts();
+  const store = useUIStore();
+  const appName = store.language === 'zh-CN' ? '字体管理器' : 'Font Manager';
+
+  // Update document title based on locale
+  useEffect(() => {
+    document.title = appName;
+  }, [appName]);
 
   return (
     <AppLayout>
@@ -16,16 +25,6 @@ function App() {
         </div>
       ) : (
         <div className="p-6 space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Font Manager</h1>
-              <p className="text-muted-foreground mt-1">
-                Found {fonts.length} fonts on your system
-              </p>
-            </div>
-          </div>
-
           {/* Font Grid */}
           <FontGrid fonts={fonts} />
         </div>

@@ -1,8 +1,10 @@
-import { Search, Grid3x3, List, Settings } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
+import { Grid3x3, List, Search, Settings } from "lucide-react";
 
 export function Topbar() {
   const { viewMode, setViewMode } = useUIStore();
+  const store = useUIStore();
+  const appName = store.language === 'zh-CN' ? '字体管理器' : 'Font Manager';
 
   return (
     <header className="h-16 border-b border-border bg-background px-6 flex items-center justify-between">
@@ -11,7 +13,7 @@ export function Topbar() {
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
           <span className="text-primary-foreground font-bold text-sm">FM</span>
         </div>
-        <h1 className="text-lg font-semibold">Font Manager</h1>
+        <h1 className="text-lg font-semibold">{appName}</h1>
       </div>
 
       {/* Search bar */}
@@ -32,22 +34,20 @@ export function Topbar() {
         <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
           <button
             onClick={() => setViewMode('grid')}
-            className={`p-2 rounded transition-colors ${
-              viewMode === 'grid'
-                ? 'bg-background shadow-sm'
-                : 'hover:bg-background/50'
-            }`}
+            className={`p-2 rounded transition-colors ${viewMode === 'grid'
+              ? 'bg-background shadow-sm'
+              : 'hover:bg-background/50'
+              }`}
             title="Grid view"
           >
             <Grid3x3 className="h-4 w-4" />
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`p-2 rounded transition-colors ${
-              viewMode === 'list'
-                ? 'bg-background shadow-sm'
-                : 'hover:bg-background/50'
-            }`}
+            className={`p-2 rounded transition-colors ${viewMode === 'list'
+              ? 'bg-background shadow-sm'
+              : 'hover:bg-background/50'
+              }`}
             title="List view"
           >
             <List className="h-4 w-4" />
