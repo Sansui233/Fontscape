@@ -1,0 +1,42 @@
+[package]
+name = "font-manager"
+version = "0.1.0"
+description = "Modern font management tool for Windows"
+authors = ["you"]
+license = ""
+repository = ""
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.2", features = ["devtools"] }
+tauri-plugin-shell = "2.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+
+# Windows API
+windows = { version = "0.58", features = [
+    "Win32_Graphics_Gdi",
+    "Win32_Graphics_DirectWrite",
+    "Win32_System_Registry",
+    "Win32_Storage_FileSystem",
+] }
+
+# Font parsing
+ttf-parser = "0.24"
+owned_ttf_parser = "0.24"
+md5 = "0.7"
+
+# Performance
+rayon = "1.10"
+dashmap = "6"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
