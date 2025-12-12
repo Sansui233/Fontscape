@@ -46,10 +46,10 @@ Windows 平台的现代化字体管理软件，提供极速启动、高性能字
 - 支持中英文实时预览
 - 可调节预览字体大小（滑块控件）
 - 点击卡片进入详细页面
+- 正确显示语言本地化条件下的名称，如中文环境下，对于中文字体显示中文字体名
 
 **技术挑战**：
-- 大量字体的渲染性能
-- 虚拟滚动优化
+- 大量字体的渲染性能、虚拟滚动优化
 - 自定义预览文本
 
 #### F4. 字体详细信息
@@ -61,18 +61,6 @@ Windows 平台的现代化字体管理软件，提供极速启动、高性能字
 **技术挑战**：
 - 提取完整的字体元数据
 - 渲染特殊字符集（符号、emoji等）
-
-#### F5. 智能搜索
-**需求描述**：
-- 实时搜索字体名称
-- 支持拼音搜索中文字体（如输入 "song" 找到 "宋体"）
-- 支持模糊匹配
-- 搜索结果高亮
-
-**技术挑战**：
-- 中文拼音转换和索引
-- 高性能搜索算法
-- 搜索结果排序优化
 
 #### F6. 字体分类和过滤
 **需求描述**：
@@ -112,16 +100,7 @@ Windows 平台的现代化字体管理软件，提供极速启动、高性能字
 
 ### 3.1 总体架构：Tauri 2.x + React 18
 
-#### 选型理由
-| 需求 | Tauri | Electron | 原生C++/C# |
-|------|-------|----------|-----------|
-| **启动速度** | ⭐⭐⭐⭐⭐ (~500ms) | ⭐⭐ (~2-3s) | ⭐⭐⭐⭐⭐ |
-| **包体积** | ⭐⭐⭐⭐⭐ (3-5MB) | ⭐ (100MB+) | ⭐⭐⭐⭐ |
-| **前端开发体验** | ⭐⭐⭐⭐⭐ (React) | ⭐⭐⭐⭐⭐ (React) | ⭐⭐ (需WPF/WinUI) |
-| **性能** | ⭐⭐⭐⭐⭐ (原生) | ⭐⭐⭐ (V8) | ⭐⭐⭐⭐⭐ |
-| **学习曲线** | ⭐⭐⭐⭐ (需学Rust) | ⭐⭐⭐⭐⭐ (纯JS) | ⭐⭐ (复杂) |
-
-**结论**：Tauri 完美平衡性能和开发体验
+Tauri 完美平衡性能和开发体验
 
 ### 3.2 前端技术栈
 
@@ -135,8 +114,6 @@ Vite 5.x             - 快速构建工具
 #### UI组件库
 ```
 TailwindCSS 3.4+     - 样式框架
-shadcn/ui            - 现代组件库（符合设计要求）
-Radix UI             - 无样式组件基础（headless UI）
 Lucide React         - 图标库
 ```
 
@@ -150,13 +127,6 @@ Immer                - 不可变数据
 ```
 @tanstack/react-virtual  - 虚拟滚动
 react-window             - 备选虚拟滚动方案
-use-debounce             - 防抖优化
-```
-
-#### 搜索功能
-```
-pinyin-pro           - 中文拼音转换
-fuse.js              - 模糊搜索引擎
 ```
 
 ### 3.3 后端技术栈 (Rust)
@@ -192,95 +162,6 @@ dashmap = "6"                    # 并发HashMap
 ## 4. 架构设计
 
 ### 4.1 项目结构
-
-```
-font-manager/
-├── src-tauri/                    # Rust 后端
-│   ├── src/
-│   │   ├── main.rs               # 入口
-│   │   ├── lib.rs                # 库入口
-│   │   │
-│   │   ├── font/                 # 字体管理模块
-│   │   │   ├── mod.rs
-│   │   │   ├── scanner.rs        # 字体扫描
-│   │   │   ├── parser.rs         # 字体解析
-│   │   │   ├── manager.rs        # 字体启用/禁用
-│   │   │   └── models.rs         # 数据模型
-│   │   │
-│   │   ├── commands/             # Tauri命令
-│   │   │   ├── mod.rs
-│   │   │   ├── font_commands.rs  # 字体相关命令
-│   │   │   └── system_commands.rs # 系统命令
-│   │   │
-│   │   ├── utils/                # 工具函数
-│   │   │   ├── mod.rs
-│   │   │   ├── registry.rs       # 注册表操作
-│   │   │   └── cache.rs          # 缓存管理
-│   │   │
-│   │   └── error.rs              # 错误处理
-│   │
-│   ├── Cargo.toml
-│   ├── tauri.conf.json           # Tauri配置
-│   └── build.rs
-│
-├── src/                          # React 前端
-│   ├── main.tsx                  # 入口
-│   ├── App.tsx                   # 根组件
-│   │
-│   ├── components/               # UI组件
-│   │   ├── layout/
-│   │   │   ├── AppLayout.tsx     # 整体布局
-│   │   │   ├── Topbar.tsx        # 顶栏
-│   │   │   └── Sidebar.tsx       # 侧栏
-│   │   │
-│   │   ├── font/
-│   │   │   ├── FontGrid.tsx      # 字体网格
-│   │   │   ├── FontCard.tsx      # 字体卡片
-│   │   │   ├── FontDetail.tsx    # 字体详情
-│   │   │   ├── FontPreview.tsx   # 字体预览
-│   │   │   └── PreviewControls.tsx # 预览控制
-│   │   │
-│   │   ├── search/
-│   │   │   ├── SearchBar.tsx     # 搜索框
-│   │   │   └── SearchResults.tsx # 搜索结果
-│   │   │
-│   │   └── ui/                   # shadcn/ui组件
-│   │       ├── button.tsx
-│   │       ├── slider.tsx
-│   │       ├── card.tsx
-│   │       └── ...
-│   │
-│   ├── hooks/                    # 自定义Hooks
-│   │   ├── useFonts.ts           # 字体数据管理
-│   │   ├── useSearch.ts          # 搜索功能
-│   │   ├── useVirtualization.ts  # 虚拟滚动
-│   │   └── useTauri.ts           # Tauri命令封装
-│   │
-│   ├── store/                    # 状态管理
-│   │   ├── fontStore.ts          # 字体状态
-│   │   ├── uiStore.ts            # UI状态
-│   │   └── settingsStore.ts      # 设置
-│   │
-│   ├── types/                    # TypeScript类型
-│   │   ├── font.ts               # 字体类型
-│   │   └── api.ts                # API类型
-│   │
-│   ├── lib/                      # 工具库
-│   │   ├── tauri-api.ts          # Tauri API封装
-│   │   ├── search-engine.ts     # 搜索引擎
-│   │   └── utils.ts              # 工具函数
-│   │
-│   └── styles/
-│       ├── globals.css           # 全局样式
-│       └── fonts.css             # 字体样式
-│
-├── public/                       # 静态资源
-├── package.json
-├── tsconfig.json
-├── tailwind.config.js
-├── vite.config.ts
-└── claude.md                     # 本文档
-```
 
 ### 4.2 数据流架构
 
@@ -327,86 +208,8 @@ font-manager/
 
 ### 4.3 核心数据模型
 
-#### Rust 端数据模型
-```rust
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FontInfo {
-    pub id: String,                    // 唯一标识
-    pub family: String,                // 字体家族
-    pub full_name: String,             // 完整名称
-    pub postscript_name: String,       // PostScript名称
-    pub style: String,                 // 样式（Regular, Bold等）
-    pub path: PathBuf,                 // 文件路径
-    pub file_size: u64,                // 文件大小
-    pub format: FontFormat,            // 格式（TTF/OTF/TTC）
-    pub is_variable: bool,             // 是否可变字体
-    pub languages: Vec<String>,        // 支持的语言
-    pub scripts: Vec<String>,          // 支持的文字系统
-    pub metadata: FontMetadata,        // 元数据
-    pub status: FontStatus,            // 状态
-    pub created_at: i64,               // 添加时间
-}
+确保前端 type.d.ts 中 FontInfo 和 后端 FontInfo 的类型一致。
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum FontFormat {
-    TrueType,      // .ttf
-    OpenType,      // .otf
-    TrueTypeCollection,  // .ttc
-    Woff,
-    Woff2,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum FontStatus {
-    Enabled,       // 已启用
-    Disabled,      // 已禁用
-    SystemFont,    // 系统字体（不可禁用）
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FontMetadata {
-    pub version: Option<String>,
-    pub designer: Option<String>,
-    pub manufacturer: Option<String>,
-    pub license: Option<String>,
-    pub copyright: Option<String>,
-    pub description: Option<String>,
-}
-```
-
-#### TypeScript 端数据模型
-```typescript
-export interface FontInfo {
-  id: string;
-  family: string;
-  fullName: string;
-  postscriptName: string;
-  style: string;
-  path: string;
-  fileSize: number;
-  format: FontFormat;
-  isVariable: boolean;
-  languages: string[];
-  scripts: string[];
-  metadata: FontMetadata;
-  status: FontStatus;
-  createdAt: number;
-}
-
-export type FontFormat = 'TrueType' | 'OpenType' | 'TrueTypeCollection' | 'Woff' | 'Woff2';
-export type FontStatus = 'Enabled' | 'Disabled' | 'SystemFont';
-
-export interface FontMetadata {
-  version?: string;
-  designer?: string;
-  manufacturer?: string;
-  license?: string;
-  copyright?: string;
-  description?: string;
-}
-```
-
----
 
 ## 5. 功能实现详细方案
 
@@ -416,154 +219,15 @@ export interface FontMetadata {
 
 **文件**: `src-tauri/src/font/scanner.rs`
 
-```rust
-use std::path::PathBuf;
-use windows::Win32::System::Registry::*;
-use rayon::prelude::*;
-
-pub struct FontScanner {
-    font_dirs: Vec<PathBuf>,
-}
-
-impl FontScanner {
-    pub fn new() -> Self {
-        Self {
-            font_dirs: vec![
-                PathBuf::from("C:\\Windows\\Fonts"),
-                PathBuf::from(std::env::var("LOCALAPPDATA").unwrap() + "\\Microsoft\\Windows\\Fonts"),
-            ],
-        }
-    }
-
-    /// 扫描所有字体
-    pub async fn scan_all_fonts(&self) -> Result<Vec<FontInfo>> {
-        // 1. 读取注册表获取字体列表
-        let registry_fonts = self.scan_registry()?;
-
-        // 2. 扫描字体目录
-        let file_fonts = self.scan_directories()?;
-
-        // 3. 合并并去重
-        let all_fonts = self.merge_fonts(registry_fonts, file_fonts);
-
-        // 4. 并行解析字体元数据
-        let parsed_fonts = all_fonts
-            .par_iter()
-            .filter_map(|path| self.parse_font(path).ok())
-            .collect();
-
-        Ok(parsed_fonts)
-    }
-
-    /// 读取注册表
-    fn scan_registry(&self) -> Result<Vec<PathBuf>> {
-        // 打开注册表键：HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts
-        // 遍历所有值，获取字体文件路径
-    }
-
-    /// 扫描目录
-    fn scan_directories(&self) -> Result<Vec<PathBuf>> {
-        // 遍历字体目录，查找 .ttf, .otf, .ttc 文件
-    }
-
-    /// 解析单个字体文件
-    fn parse_font(&self, path: &PathBuf) -> Result<FontInfo> {
-        // 使用 ttf-parser 解析字体文件
-        // 提取元数据
-    }
-}
-```
-
-**文件**: `src-tauri/src/font/parser.rs`
-
-```rust
-use ttf_parser::{Face, Name};
-
-pub struct FontParser;
-
-impl FontParser {
-    /// 解析字体文件
-    pub fn parse(data: &[u8]) -> Result<FontInfo> {
-        let face = Face::parse(data, 0)?;
-
-        Ok(FontInfo {
-            family: Self::extract_name(&face, Name::Family)?,
-            full_name: Self::extract_name(&face, Name::FullName)?,
-            postscript_name: Self::extract_name(&face, Name::PostScriptName)?,
-            style: Self::extract_name(&face, Name::Subfamily)?,
-            metadata: Self::extract_metadata(&face)?,
-            languages: Self::detect_languages(&face)?,
-            scripts: Self::detect_scripts(&face)?,
-            // ...
-        })
-    }
-
-    /// 提取字体名称
-    fn extract_name(face: &Face, name_id: Name) -> Result<String> {
-        // 优先读取英文名称，fallback到其他语言
-    }
-
-    /// 检测支持的语言
-    fn detect_languages(face: &Face) -> Result<Vec<String>> {
-        // 分析字符集覆盖范围
-        // Unicode范围：
-        // - U+4E00-9FFF: CJK统一汉字 → 中文
-        // - U+AC00-D7AF: 韩文 → 韩文
-        // - U+3040-309F: 平假名 → 日文
-    }
-
-    /// 检测支持的文字系统
-    fn detect_scripts(face: &Face) -> Result<Vec<String>> {
-        // 读取 OS/2 表的 ulUnicodeRange 字段
-    }
-}
-```
-
 #### 5.1.2 前端调用
 
 **文件**: `src/lib/tauri-api.ts`
 
-```typescript
-import { invoke } from '@tauri-apps/api/core';
+- `invoke('scan_fonts')`
+- `invoke('refresh_fonts')`
 
-export async function scanFonts(): Promise<FontInfo[]> {
-  return await invoke('scan_fonts');
-}
+被 **文件**: `src/hooks/useFonts.ts` 使用
 
-export async function refreshFonts(): Promise<FontInfo[]> {
-  return await invoke('refresh_fonts');
-}
-```
-
-**文件**: `src/hooks/useFonts.ts`
-
-```typescript
-import { useEffect } from 'react';
-import { useFontStore } from '@/store/fontStore';
-import { scanFonts } from '@/lib/tauri-api';
-
-export function useFonts() {
-  const { fonts, setFonts, isLoading, setIsLoading } = useFontStore();
-
-  useEffect(() => {
-    loadFonts();
-  }, []);
-
-  async function loadFonts() {
-    setIsLoading(true);
-    try {
-      const fontList = await scanFonts();
-      setFonts(fontList);
-    } catch (error) {
-      console.error('Failed to load fonts:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  return { fonts, isLoading, refreshFonts: loadFonts };
-}
-```
 
 ### 5.2 字体启用/禁用
 
@@ -810,156 +474,6 @@ export function PreviewControls() {
 }
 ```
 
-### 5.4 智能搜索
-
-#### 5.4.1 搜索引擎设计
-
-**功能要求**：
-1. 实时搜索（输入时即时响应）
-2. 拼音搜索（"song" → "宋体"）
-3. 模糊匹配（容错）
-4. 结果排序（相关性优先）
-
-**技术方案**：
-- **拼音转换**：使用 `pinyin-pro`
-- **模糊搜索**：使用 `fuse.js`
-- **防抖优化**：使用 `use-debounce`
-
-#### 5.4.2 实现
-
-**文件**: `src/lib/search-engine.ts`
-
-```typescript
-import Fuse from 'fuse.js';
-import { pinyin } from 'pinyin-pro';
-
-export class FontSearchEngine {
-  private fuse: Fuse<FontInfo>;
-  private pinyinIndex: Map<string, FontInfo[]>;
-
-  constructor(fonts: FontInfo[]) {
-    // 初始化 Fuse.js
-    this.fuse = new Fuse(fonts, {
-      keys: [
-        { name: 'family', weight: 2 },
-        { name: 'fullName', weight: 2 },
-        { name: 'postscriptName', weight: 1 },
-        { name: 'style', weight: 0.5 },
-      ],
-      threshold: 0.3, // 模糊度
-      includeScore: true,
-    });
-
-    // 构建拼音索引
-    this.pinyinIndex = this.buildPinyinIndex(fonts);
-  }
-
-  search(query: string): FontInfo[] {
-    if (!query.trim()) return [];
-
-    // 1. 直接搜索
-    const directResults = this.fuse.search(query);
-
-    // 2. 拼音搜索（仅针对中文字体）
-    const pinyinResults = this.searchByPinyin(query);
-
-    // 3. 合并结果并去重
-    const combined = this.mergeResults(directResults, pinyinResults);
-
-    // 4. 按相关性排序
-    return combined.slice(0, 50); // 限制50个结果
-  }
-
-  private buildPinyinIndex(fonts: FontInfo[]): Map<string, FontInfo[]> {
-    const index = new Map<string, FontInfo[]>();
-
-    fonts.forEach(font => {
-      // 为中文字体名生成拼音
-      if (this.hasChinese(font.family)) {
-        const pinyinStr = pinyin(font.family, {
-          toneType: 'none',
-          type: 'array'
-        }).join('');
-
-        if (!index.has(pinyinStr)) {
-          index.set(pinyinStr, []);
-        }
-        index.get(pinyinStr)!.push(font);
-      }
-    });
-
-    return index;
-  }
-
-  private searchByPinyin(query: string): FontInfo[] {
-    const results: FontInfo[] = [];
-
-    this.pinyinIndex.forEach((fonts, pinyin) => {
-      if (pinyin.includes(query.toLowerCase())) {
-        results.push(...fonts);
-      }
-    });
-
-    return results;
-  }
-
-  private hasChinese(text: string): boolean {
-    return /[\u4e00-\u9fa5]/.test(text);
-  }
-}
-```
-
-**文件**: `src/hooks/useSearch.ts`
-
-```typescript
-import { useMemo, useState } from 'react';
-import { useDebounce } from 'use-debounce';
-import { FontSearchEngine } from '@/lib/search-engine';
-import { useFontStore } from '@/store/fontStore';
-
-export function useSearch() {
-  const fonts = useFontStore(state => state.fonts);
-  const [query, setQuery] = useState('');
-  const [debouncedQuery] = useDebounce(query, 300); // 300ms防抖
-
-  const searchEngine = useMemo(
-    () => new FontSearchEngine(fonts),
-    [fonts]
-  );
-
-  const results = useMemo(
-    () => searchEngine.search(debouncedQuery),
-    [searchEngine, debouncedQuery]
-  );
-
-  return { query, setQuery, results };
-}
-```
-
-**文件**: `src/components/search/SearchBar.tsx`
-
-```typescript
-import { Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { useSearch } from '@/hooks/useSearch';
-
-export function SearchBar() {
-  const { query, setQuery } = useSearch();
-
-  return (
-    <div className="search-bar">
-      <Search className="search-icon" />
-      <Input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search fonts... (支持拼音搜索)"
-        className="search-input"
-      />
-    </div>
-  );
-}
-```
 
 ### 5.5 字体分类和过滤
 
@@ -1208,313 +722,9 @@ interface UIStore {
 
 **文件**: `src/components/ui/ContextMenu.tsx`
 
-```typescript
-import { useEffect, useRef } from 'react';
-
-interface ContextMenuProps {
-  x: number;
-  y: number;
-  onClose: () => void;
-  items: ContextMenuItem[];
-}
-
-interface ContextMenuItem {
-  label: string;
-  icon?: React.ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-  danger?: boolean;  // 危险操作（红色）
-}
-
-export function ContextMenu({ x, y, onClose, items }: ContextMenuProps) {
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // 点击外部关闭
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    }
-
-    // ESC 键关闭
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [onClose]);
-
-  // 调整菜单位置，确保不超出视口
-  const adjustedPosition = {
-    x: Math.min(x, window.innerWidth - 200),
-    y: Math.min(y, window.innerHeight - items.length * 40 - 20),
-  };
-
-  return (
-    <div
-      ref={menuRef}
-      className="fixed z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[160px]"
-      style={{
-        left: `${adjustedPosition.x}px`,
-        top: `${adjustedPosition.y}px`,
-      }}
-    >
-      {items.map((item, index) => (
-        <button
-          key={index}
-          onClick={() => {
-            if (!item.disabled) {
-              item.onClick();
-              onClose();
-            }
-          }}
-          disabled={item.disabled}
-          className={`
-            w-full px-4 py-2 text-left text-sm flex items-center gap-2
-            hover:bg-accent transition-colors
-            disabled:opacity-50 disabled:cursor-not-allowed
-            ${item.danger ? 'text-destructive' : 'text-foreground'}
-          `}
-        >
-          {item.icon && <span className="w-4 h-4">{item.icon}</span>}
-          <span>{item.label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-```
-
 **文件**: `src/components/font/FontCard.tsx` (更新)
 
-```typescript
-import { useState } from "react";
-import { Info, CheckSquare, Ban, Check } from "lucide-react";
-import { FontInfo } from "@/types/font";
-import { useUIStore } from "@/store/uiStore";
-import { toggleFont } from "@/lib/tauri-api";
-import { useFontStore } from "@/store/fontStore";
-import { ContextMenu } from "@/components/ui/ContextMenu";
-
-interface FontCardProps {
-  font: FontInfo;
-}
-
-export function FontCard({ font }: FontCardProps) {
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
-  const [isToggling, setIsToggling] = useState(false);
-
-  const updateFontStatus = useFontStore((state) => state.updateFontStatus);
-  const { multiSelectMode, selectedFontIds, toggleFontSelection } = useUIStore();
-  const setMultiSelectMode = useUIStore((state) => state.setMultiSelectMode);
-
-  // 右键菜单处理
-  function handleContextMenu(e: React.MouseEvent) {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY });
-  }
-
-  // 禁用/启用字体
-  async function handleToggleFont() {
-    if (font.status === "SystemFont") return;
-
-    setIsToggling(true);
-    try {
-      const newStatus = font.status === "Enabled" ? "Disabled" : "Enabled";
-      await toggleFont(font.id, newStatus === "Enabled");
-      updateFontStatus(font.id, newStatus);
-    } catch (error) {
-      console.error("Failed to toggle font:", error);
-    } finally {
-      setIsToggling(false);
-    }
-  }
-
-  // 上下文菜单项
-  const menuItems = [
-    {
-      label: "Info",
-      icon: <Info className="w-4 h-4" />,
-      onClick: () => {
-        // TODO: 打开字体详情页面
-        console.log("Show info for", font.id);
-      },
-    },
-    {
-      label: "Multi-select",
-      icon: <CheckSquare className="w-4 h-4" />,
-      onClick: () => {
-        setMultiSelectMode(true);
-        toggleFontSelection(font.id);
-      },
-    },
-    {
-      label: font.status === "Enabled" ? "Disable" : "Enable",
-      icon: font.status === "Enabled"
-        ? <Ban className="w-4 h-4" />
-        : <Check className="w-4 h-4" />,
-      onClick: handleToggleFont,
-      disabled: font.status === "SystemFont" || isToggling,
-      danger: font.status === "Enabled",
-    },
-  ];
-
-  const isSelected = selectedFontIds.has(font.id);
-
-  return (
-    <>
-      <div
-        onContextMenu={handleContextMenu}
-        onClick={() => {
-          if (multiSelectMode) {
-            toggleFontSelection(font.id);
-          }
-        }}
-        className={`
-          group relative overflow-hidden rounded-lg border bg-card p-6
-          transition-all hover:shadow-lg hover:border-primary
-          ${isSelected ? 'ring-2 ring-primary border-primary' : 'border-border'}
-          ${multiSelectMode ? 'cursor-pointer' : ''}
-        `}
-      >
-        {/* 多选模式：复选框 */}
-        {multiSelectMode && (
-          <div className="absolute top-3 left-3">
-            <div className={`
-              w-5 h-5 rounded border-2 flex items-center justify-center
-              ${isSelected ? 'bg-primary border-primary' : 'border-muted-foreground'}
-            `}>
-              {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
-            </div>
-          </div>
-        )}
-
-        {/* 状态指示器 */}
-        <div className="absolute top-3 right-3">
-          <div
-            className={`h-2 w-2 rounded-full ${
-              font.status === 'Enabled' ? 'bg-green-500' :
-              font.status === 'Disabled' ? 'bg-gray-400' :
-              'bg-blue-500'
-            }`}
-            title={font.status}
-          />
-        </div>
-
-        {/* 字体预览 - 使用字体家族名称 */}
-        <div className="mb-4 overflow-hidden">
-          <div
-            className="transition-all text-2xl"
-            style={{
-              fontFamily: `"${font.family}", sans-serif`,
-            }}
-          >
-            {font.family}
-          </div>
-        </div>
-
-        {/* 字体信息 */}
-        <div className="space-y-1">
-          <h3 className="font-semibold text-foreground truncate" title={font.fullName}>
-            {font.family}
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {font.style} • {font.format}
-          </p>
-          <div className="flex flex-wrap gap-1 mt-2">
-            {font.languages.slice(0, 3).map((lang) => (
-              <span
-                key={lang}
-                className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground"
-              >
-                {lang}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 右键菜单 */}
-      {contextMenu && (
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          onClose={() => setContextMenu(null)}
-          items={menuItems}
-        />
-      )}
-    </>
-  );
-}
-```
-
 **文件**: `src/store/uiStore.ts` (更新)
-
-```typescript
-import { create } from 'zustand';
-
-type ViewMode = 'grid' | 'list';
-
-interface UIStore {
-  viewMode: ViewMode;
-  previewSize: number;
-  previewText: string;
-  sidebarCollapsed: boolean;
-  multiSelectMode: boolean;
-  selectedFontIds: Set<string>;
-
-  setViewMode: (mode: ViewMode) => void;
-  setPreviewSize: (size: number) => void;
-  setPreviewText: (text: string) => void;
-  toggleSidebar: () => void;
-  setMultiSelectMode: (mode: boolean) => void;
-  toggleFontSelection: (fontId: string) => void;
-  clearSelection: () => void;
-  selectAll: (fontIds: string[]) => void;
-}
-
-export const useUIStore = create<UIStore>((set) => ({
-  viewMode: 'grid',
-  previewSize: 24,
-  previewText: '', // 空字符串表示使用字体家族名称
-  sidebarCollapsed: false,
-  multiSelectMode: false,
-  selectedFontIds: new Set(),
-
-  setViewMode: (mode) => set({ viewMode: mode }),
-  setPreviewSize: (size) => set({ previewSize: size }),
-  setPreviewText: (text) => set({ previewText: text }),
-  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
-
-  setMultiSelectMode: (mode) => set({
-    multiSelectMode: mode,
-    selectedFontIds: mode ? new Set() : new Set(),
-  }),
-
-  toggleFontSelection: (fontId) => set((state) => {
-    const newSet = new Set(state.selectedFontIds);
-    if (newSet.has(fontId)) {
-      newSet.delete(fontId);
-    } else {
-      newSet.add(fontId);
-    }
-    return { selectedFontIds: newSet };
-  }),
-
-  clearSelection: () => set({ selectedFontIds: new Set() }),
-
-  selectAll: (fontIds) => set({ selectedFontIds: new Set(fontIds) }),
-}));
-```
 
 #### 5.7.5 多选模式工具栏
 
@@ -1590,33 +800,9 @@ export function MultiSelectToolbar() {
 
 **文件**: `src/components/layout/Sidebar.tsx` (更新)
 
-```typescript
-// 语言过滤部分添加 Unknown 选项
-<FilterSection title="Language">
-  <FilterOption label="Unknown" value="Unknown" />
-  <FilterOption label="中文" value="Chinese" />
-  <FilterOption label="English" value="English" />
-  <FilterOption label="日本語" value="Japanese" />
-  <FilterOption label="한국어" value="Korean" />
-</FilterSection>
-```
-
 #### 5.7.7 技术细节
 
 **右键菜单定位算法**：
-```typescript
-// 确保菜单不超出视口
-const adjustedPosition = {
-  x: Math.min(x, window.innerWidth - menuWidth),
-  y: Math.min(y, window.innerHeight - menuHeight),
-};
-
-// 如果靠近屏幕底部，向上显示
-if (y + menuHeight > window.innerHeight) {
-  adjustedPosition.y = y - menuHeight;
-}
-```
-
 **性能优化**：
 - 使用 `React.memo` 优化 ContextMenu 组件
 - 多选模式下使用 Set 存储选中ID（O(1)查找）
@@ -1675,7 +861,7 @@ pub async fn load_fonts_with_cache() -> Result<Vec<FontInfo>> {
 **策略**：
 1. **虚拟滚动**：只渲染可见区域
 2. **字体懒加载**：延迟加载字体文件
-3. **防抖/节流**：搜索、滚动事件优化
+3. **防抖/节流**：过滤、滚动事件优化
 4. **Web Workers**：后台处理数据
 
 **字体懒加载**：
@@ -1814,27 +1000,6 @@ export function useLazyFont(fontFamily: string) {
 
 ### 7.3 响应式布局
 
-```tsx
-<div className="app-layout">
-  {/* 顶栏 - 固定高度 */}
-  <header className="h-16 border-b">
-    {/* ... */}
-  </header>
-
-  <div className="flex h-[calc(100vh-4rem)]">
-    {/* 侧栏 - 固定宽度 */}
-    <aside className="w-64 border-r overflow-y-auto">
-      {/* ... */}
-    </aside>
-
-    {/* 主内容 - 自适应 */}
-    <main className="flex-1 overflow-y-auto p-6">
-      {/* ... */}
-    </main>
-  </div>
-</div>
-```
-
 ---
 
 ## 8. 开发路线图
@@ -1842,29 +1007,27 @@ export function useLazyFont(fontFamily: string) {
 ### Phase 1: 基础框架 (Week 1-2)
 - [x] 初始化Tauri项目
 - [x] 配置React + TypeScript + TailwindCSS
-- [x] 集成shadcn/ui组件库
-- [ ] 实现基础布局（顶栏+侧栏+主区域）
-- [ ] 创建数据模型和Store
+- [x] 实现基础布局（顶栏+侧栏+主区域）
+- [x] 创建数据模型和Store
 
 ### Phase 2: 字体扫描 (Week 2-3)
-- [ ] 实现Rust字体扫描器
-- [ ] 集成ttf-parser解析字体
+- [x] 实现Rust字体扫描器
+- [x] 集成ttf-parser解析字体
 - [ ] 实现缓存机制
-- [ ] 前端调用字体列表API
-- [ ] 显示基本字体列表
+- [x] 前端调用字体列表API
+- [x] 显示基本字体列表
 
 ### Phase 3: 字体预览 (Week 3-4)
-- [ ] 实现字体网格布局
+- [x] 实现字体网格布局
 - [ ] 集成虚拟滚动
-- [ ] 实现字体卡片组件
+- [x] 实现字体卡片组件
 - [ ] 添加预览控制（字体大小、预览文本）
 - [ ] 字体懒加载优化
 
 ### Phase 4: 搜索功能 (Week 4-5)
-- [ ] 实现搜索引擎
+- [x] 实现搜索引擎
 - [ ] 集成拼音搜索
-- [ ] 实现搜索UI
-- [ ] 搜索结果高亮
+- [x] 实现搜索UI
 - [ ] 搜索性能优化
 
 ### Phase 5: 字体管理 (Week 5-6)
@@ -1947,18 +1110,6 @@ export function useLazyFont(fontFamily: string) {
 - [Google Fonts](https://fonts.google.com/) - 测试字体
 - [Font Squirrel](https://www.fontsquirrel.com/) - 字体资源
 
----
-
-## 11. 总结
-
-这个项目完美结合了你的React技能和Windows原生性能需求。通过Tauri，你可以：
-
-1. **利用现有技能**：80%的开发时间在熟悉的React领域
-2. **学习新技术**：逐步掌握Rust和Windows开发
-3. **达成性能目标**：极速启动、流畅交互
-4. **构建现代UI**：使用最新的设计系统
-
-项目架构清晰、可扩展性强，适合长期维护和迭代。
 
 ---
 
