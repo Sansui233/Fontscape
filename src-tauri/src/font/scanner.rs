@@ -201,6 +201,9 @@ impl FontScanner {
         // Extract CSS font-family name (priority: ID 16 > ID 1 > ID 21)
         let css_font_family = Self::extract_css_font_family(face);
 
+        // Extract font weight (priority: fvar wght axis for variable fonts > OS/2 usWeightClass)
+        let weight = Self::extract_weight(face);
+
 
         Ok(FontInfo {
             id,
@@ -212,6 +215,7 @@ impl FontScanner {
             file_size: metadata.len(),
             format,
             is_variable: face.is_variable(),
+            weight,
             languages,
             scripts,
             metadata: font_metadata,
@@ -297,6 +301,23 @@ impl FontScanner {
         }
         // 4. Final fallback
         "Unknown".to_string()
+    }
+
+    /// Extract font weight with Chrome matching priority
+    /// Priority: fvar wght axis (variable fonts) > OS/2 usWeightClass > fallback 400
+    fn extract_weight(face: &ttf_parser::Face) -> u16 {
+        // 1. For variable fonts, try fvar table wght axis default value
+        if face.is_variable() {
+            for axis in face.variation_axes() {
+                // wght axis tag ('wght')
+                if axis.tag.to_bytes() == [b'w', b'g', b'h', b't'] {
+                    return axis.def_value as u16;
+                }
+            }
+        }
+
+        // 2. For static fonts, use face.weight() which reads OS/2 usWeightClass
+        face.weight().to_number()
     }
 
     /// Extract font metadata from OpenType/TrueType naming table

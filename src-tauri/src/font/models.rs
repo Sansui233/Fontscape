@@ -11,6 +11,7 @@ pub struct FontInfo {
     pub file_size: u64,          // 由 fs::metadata 获取
     pub format: FontFormat,      // 由文件扩展名判定 (.ttf/.otf/.ttc)
     pub is_variable: bool,       // 由 ttf_parser::Face::is_variable() 判定
+    pub weight: u16,             // 字重值 (100-900)，由 OS/2 usWeightClass 或 fvar wght 轴获取
     pub languages: Vec<String>,  // 由 Glyph 覆盖范围判定 (检测特定字符是否存在)
     pub scripts: Vec<String>,    // 由 Glyph 覆盖范围判定 (Latn/Hans/Jpan/Kore/Cyrl/Arab)
     pub metadata: FontMetadata,  // OpenType Name Table 完整信息 (ID 0-20)

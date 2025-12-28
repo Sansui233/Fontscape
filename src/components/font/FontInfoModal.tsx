@@ -1,3 +1,4 @@
+import { formatFontWeight } from "@/lib/font";
 import { formatDate, formatFileSize } from "@/lib/utils";
 import { useUIStore } from "@/store/uiStore";
 import { FontInfo } from "@/types/font";
@@ -66,13 +67,13 @@ export function FontInfoModal({ font, onClose }: FontInfoModalProps) {
             <h3 className="text-lg font-semibold mb-3">Preview</h3>
             <div
               className="p-6 bg-muted/30 rounded-lg text-4xl leading-relaxed"
-              style={{ fontFamily: `"${font.css_font_family}", sans-serif` }}
+              style={{ fontFamily: `"${font.css_font_family}", sans-serif`, fontWeight: font.weight }}
             >
               {displayName}
             </div>
             <div
               className="mt-3 p-4 bg-muted/30 rounded-lg text-base"
-              style={{ fontFamily: `"${font.css_font_family}", sans-serif` }}
+              style={{ fontFamily: `"${font.css_font_family}", sans-serif`, fontWeight: font.weight }}
             >
               The quick brown fox jumps over the lazy dog<br />
               0123456789
@@ -84,6 +85,7 @@ export function FontInfoModal({ font, onClose }: FontInfoModalProps) {
             <h3 className="text-lg font-semibold mb-3">Basic Information</h3>
             <dl className="grid grid-cols-1 gap-3">
               <InfoRow label="CSS Font Family" value={font.css_font_family} />
+              <InfoRow label="Weight" value={formatFontWeight(font.weight)} />
               <InfoRow label="File Path" value={font.path} />
               <InfoRow label="Format" value={font.format} />
               <InfoRow label="File Size" value={formatFileSize(font.fileSize)} />

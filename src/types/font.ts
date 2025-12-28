@@ -9,6 +9,7 @@ export interface FontInfo {
   fileSize: number;
   format: FontFormat;
   is_variable: boolean;
+  weight: number;              // 字重值 (100-900)，由 OS/2 usWeightClass 或 fvar wght 轴获取
   languages: string[];
   scripts: string[];
   metadata: FontMetadata;

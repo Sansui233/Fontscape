@@ -1,4 +1,5 @@
 import { ContextMenu } from "@/components/ui/ContextMenu";
+import { getFontWeightName } from "@/lib/font";
 import { checkGlyphsInFont, toggleFont } from "@/lib/tauri-api";
 import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
@@ -137,6 +138,7 @@ export function FontCard({ font, onShowInfo }: FontCardProps) {
             className="transition-all text-2xl leading-normal h-9 overflow-hidden"
             style={{
               fontFamily: `"${font.css_font_family}", sans-serif`,
+              fontWeight: font.weight,
             }}
           >
             {displayText}
@@ -149,7 +151,7 @@ export function FontCard({ font, onShowInfo }: FontCardProps) {
             {displayName}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {font.style} • {font.format}
+            {getFontWeightName(font.weight)} • {font.format}
           </p>
           <div className="flex flex-wrap gap-1 mt-2">
             {font.languages.slice(0, 3).map((lang) => (
