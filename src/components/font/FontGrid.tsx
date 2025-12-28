@@ -1,15 +1,39 @@
 import { useUIStore } from "@/store/uiStore";
 import { FontInfo } from "@/types/font";
-import { useMemo } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FontCard } from "./FontCard";
+import { FontInfoModal } from "./FontInfoModal";
 
 interface FontGridProps {
   fonts: FontInfo[];
 }
 
 export function FontGrid({ fonts }: FontGridProps) {
-
   const store = useUIStore();
+  const parentRef = useRef<HTMLDivElement>(null);
+  const [columns, setColumns] = useState(3);
+  const [selectedFont, setSelectedFont] = useState<FontInfo | null>(null);
+
+  // Update columns based on window width (matching Tailwind breakpoints)
+  useEffect(() => {
+    const updateColumns = () => {
+      const width = window.innerWidth;
+
+      // Tailwind breakpoints: sm:640px, lg:1024px
+      if (width < 640) {
+        setColumns(1);
+      } else if (width < 1024) {
+        setColumns(2);
+      } else {
+        setColumns(3);
+      }
+    };
+
+    updateColumns();
+    window.addEventListener('resize', updateColumns);
+    return () => window.removeEventListener('resize', updateColumns);
+  }, []);
 
   const filtered_fonts = useMemo(() => {
     const filters = store.filters ?? {};
@@ -49,6 +73,16 @@ export function FontGrid({ fonts }: FontGridProps) {
     });
   }, [store.filters, fonts]);
 
+  // Calculate number of rows based on columns
+  const rowCount = Math.ceil(filtered_fonts.length / columns);
+
+  // Create virtualizer for rows
+  const rowVirtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 200, // Estimated card height + gap
+    overscan: 5, // Render 5 extra rows above and below viewport
+  });
 
   if (fonts.length === 0) {
     return (
@@ -58,11 +92,62 @@ export function FontGrid({ fonts }: FontGridProps) {
     );
   }
 
+  if (filtered_fonts.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">No fonts match your filters</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filtered_fonts.map((font) => (
-        <FontCard key={font.id} font={font} />
-      ))}
-    </div>
+    <>
+      <div ref={parentRef} className="h-full overflow-auto">
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            const startIdx = virtualRow.index * columns;
+            const rowFonts = filtered_fonts.slice(startIdx, startIdx + columns);
+
+            return (
+              <div
+                key={virtualRow.key}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-1">
+                  {rowFonts.map((font) => (
+                    <FontCard
+                      key={font.id}
+                      font={font}
+                      onShowInfo={setSelectedFont}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Modal rendered outside the virtual scroll container */}
+      {selectedFont && (
+        <FontInfoModal
+          font={selectedFont}
+          onClose={() => setSelectedFont(null)}
+        />
+      )}
+    </>
   );
 }

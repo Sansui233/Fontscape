@@ -1,28 +1,42 @@
 import { ContextMenu } from "@/components/ui/ContextMenu";
-import { toggleFont } from "@/lib/tauri-api";
+import { checkGlyphsInFont, toggleFont } from "@/lib/tauri-api";
 import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
 import { FontInfo } from "@/types/font";
 import { Ban, Check, CheckSquare, Info } from "lucide-react";
-import { useState } from "react";
-import { FontInfoModal } from "./FontInfoModal";
+import { useEffect, useState } from "react";
 
 interface FontCardProps {
   font: FontInfo;
+  onShowInfo: (font: FontInfo) => void;
 }
 
-export function FontCard({ font }: FontCardProps) {
+export function FontCard({ font, onShowInfo }: FontCardProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
-  const [showInfoModal, setShowInfoModal] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [displayText, setdisplayText] = useState("");
 
   const updateFontStatus = useFontStore((state) => state.updateFontStatus);
-  const { multiSelectMode, selectedFontIds, toggleFontSelection } = useUIStore();
+  const { multiSelectMode, selectedFontIds, toggleFontSelection, previewText } = useUIStore();
   const setMultiSelectMode = useUIStore((state) => state.setMultiSelectMode);
 
   // Get display name based on locale
   const store = useUIStore()
   const displayName = (store.language === 'zh-CN' && font.family_zh) ? font.family_zh : font.family;
+
+
+  // 检查 font 是否包含预览文本的字形，没有的用方框替代，以避免 css fallback 问题
+  useEffect(() => {
+    // Use preview text if available, otherwise use display name
+    const previewDisplayText = previewText.trim() || displayName;
+    checkGlyphsInFont(font.path, previewDisplayText).then(results => {
+      const constructedText = results.map(res => res.exists ? res.glyph : '□').join('');
+      setdisplayText(constructedText);
+    }).catch(error => {
+      console.error("Failed to check glyphs in font:", error);
+      setdisplayText(previewDisplayText); // Fallback to original text on error
+    });
+  }, [displayName, previewText, font.path]);
 
   // 右键菜单处理
   function handleContextMenu(e: React.MouseEvent) {
@@ -52,7 +66,7 @@ export function FontCard({ font }: FontCardProps) {
       label: "Info",
       icon: <Info className="w-4 h-4" />,
       onClick: () => {
-        setShowInfoModal(true);
+        onShowInfo(font);
       },
     },
     {
@@ -84,7 +98,7 @@ export function FontCard({ font }: FontCardProps) {
           if (multiSelectMode) {
             toggleFontSelection(font.id);
           } else {
-            setShowInfoModal(true);
+            onShowInfo(font);
           }
         }}
         className={`
@@ -117,15 +131,15 @@ export function FontCard({ font }: FontCardProps) {
           />
         </div>
 
-        {/* 字体预览 - 使用 display name */}
+        {/* 字体预览 - 使用 preview text or display name */}
         <div className="mb-4 overflow-hidden">
           <div
-            className="transition-all text-2xl leading-normal"
+            className="transition-all text-2xl leading-normal h-9 overflow-hidden"
             style={{
               fontFamily: `"${font.family}", sans-serif`,
             }}
           >
-            {displayName}
+            {displayText}
           </div>
         </div>
 
@@ -157,14 +171,6 @@ export function FontCard({ font }: FontCardProps) {
           y={contextMenu.y}
           onClose={() => setContextMenu(null)}
           items={menuItems}
-        />
-      )}
-
-      {/* Info Modal */}
-      {showInfoModal && (
-        <FontInfoModal
-          font={font}
-          onClose={() => setShowInfoModal(false)}
         />
       )}
     </>

@@ -11,6 +11,7 @@ fn main() {
             scan_fonts,
             refresh_fonts,
             toggle_font,
+            check_glyphs_in_font
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

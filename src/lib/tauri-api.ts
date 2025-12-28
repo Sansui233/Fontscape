@@ -164,3 +164,18 @@ export async function toggleFont(fontId: string, enable: boolean): Promise<void>
     throw error;
   }
 }
+
+export async function checkGlyphsInFont(fontPath: string, text: string): Promise<{ glyph: string; exists: boolean }[]> {
+  if (USE_MOCK) {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    console.log(`Mock: Checking glyphs in font at ${fontPath} for text "${text}"`);
+    return text.split('').map(char => ({ glyph: char, exists: true }));
+  }
+
+  try {
+    return await invoke<{ glyph: string; exists: boolean }[]>('check_glyphs_in_font', { fontPath, text });
+  } catch (error) {
+    console.error('Failed to check glyphs in font:', error);
+    throw error;
+  }
+}

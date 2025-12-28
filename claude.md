@@ -554,40 +554,6 @@ pub enum FontType {
 
 **文件**: `src/components/layout/Sidebar.tsx`
 
-```typescript
-import { useFilterStore } from '@/store/filterStore';
-
-export function Sidebar() {
-  const { activeFilters, toggleFilter } = useFilterStore();
-
-  return (
-    <aside className="sidebar">
-      {/* 语言过滤 */}
-      <FilterSection title="Language">
-        <FilterOption label="中文" value="Chinese" />
-        <FilterOption label="English" value="English" />
-        <FilterOption label="日本語" value="Japanese" />
-        <FilterOption label="한국어" value="Korean" />
-      </FilterSection>
-
-      {/* 类型过滤 */}
-      <FilterSection title="Type">
-        <FilterOption label="Serif" value="Serif" />
-        <FilterOption label="Sans Serif" value="SansSerif" />
-        <FilterOption label="Monospace" value="Monospace" />
-        <FilterOption label="Handwriting" value="Handwriting" />
-      </FilterSection>
-
-      {/* 状态过滤 */}
-      <FilterSection title="Status">
-        <FilterOption label="Enabled" value="Enabled" />
-        <FilterOption label="Disabled" value="Disabled" />
-      </FilterSection>
-    </aside>
-  );
-}
-```
-
 ### 5.6 字体详情页面
 
 **文件**: `src/components/font/FontDetail.tsx`

@@ -24,9 +24,11 @@ function App() {
           </div>
         </div>
       ) : (
-        <div className="p-6 space-y-6">
-          {/* Font Grid */}
-          <FontGrid fonts={fonts} />
+        <div className="h-full flex flex-col p-6">
+          {/* Font Grid with full height for virtual scrolling */}
+          <div className="flex-1 min-h-0">
+            <FontGrid fonts={fonts} />
+          </div>
         </div>
       )}
     </AppLayout>
