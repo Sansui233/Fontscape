@@ -129,7 +129,6 @@ export function FontCard({ fontFamily, onShowInfo }: FontCardProps) {
         )}
         <div className="absolute top-3 right-3 flex  space-x-2">
 
-
           {/* 状态指示器 */}
           <div
             className={`h-2 w-2 rounded-full ${font.status === 'Enabled' ? 'bg-green-500' :
@@ -163,12 +162,12 @@ export function FontCard({ fontFamily, onShowInfo }: FontCardProps) {
             </h3>
             {/* 可变字体指示器 */}
             {font.is_variable &&
-              <div className="rounded-full px-2 py-0.5 bg-secondary text-secondary-foreground text-xs">
+              <div className="shrink-0 rounded-full px-2 py-0.5 bg-secondary text-secondary-foreground text-xs">
                 V
               </div>}
             {/* 字体族 */}
             {fontFamily.font_count > 1 &&
-              <span className="rounded-full px-2 py-0.5 bg-gray-300 text-white text-xs">
+              <span className="shrink-0 rounded-full px-2 py-0.5 bg-gray-300 text-white text-xs">
                 F {fontFamily.font_count}
               </span>
             }

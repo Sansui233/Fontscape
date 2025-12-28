@@ -52,6 +52,9 @@ export function FontGrid({ fontState }: FontGridProps) {
       if (!font) return false;
 
       // 如果没有语言过滤，则不过滤语言；否则要求字体包含所有选中的语言
+      // TODO 对于中文需要更精确的匹配，比如简体中文、繁体中文等
+      // TODO 后台返回的language 依靠 Glyph，而设计上说的 Language 是 main language
+      // 绝对不喜欢在看日语字体时看到一堆简中。应该统一一下与 sidebar 的过滤器
       if (langFilters.length > 0 && !langFilters.every((l) => font.languages.includes(l))) {
         return false;
       }
