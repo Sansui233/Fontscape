@@ -4,6 +4,8 @@
 
 Modern font browsing / management tool for Windows built with Tauri and React.
 
+> This project is still under development. Only basic filter features are achieved but it's useful for me so I put it here
+
 ## Why do this?
 
 - It can accurately filter fonts by language, and basically supports the languages ​​of the three East Asian countries that are planned to be improved.
@@ -15,15 +17,15 @@ In addition, the font metadata on the internet is rather messy; for example, the
 
 ## TODO
 
-- [] Fast startup
-- [] Font preview with customizable size and text
-- [] Smart search with pinyin support for Chinese fonts
-- [] Font categorization and filtering by language and type
-- [] Grid and Paper view modes
-- [] Right-click context menu for quick actions
-- [] Multi-select mode for batch operations
-- [] Download from open source
-- [] Install/Unstall/Toggle font
+- [ ] Fast startup
+- [ ] Font preview with customizable size and text
+- [ ] Smart search with pinyin support for Chinese fonts
+- [ ] Font categorization and filtering by language and type
+- [ ] Grid and Paper view modes
+- [ ] Right-click context menu for quick actions
+- [ ] Multi-select mode for batch operations
+- [ ] Download from open source
+- [ ] Install/Unstall/Toggle font
 
 ## Screenshots
 
