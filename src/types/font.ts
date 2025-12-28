@@ -16,7 +16,9 @@ export interface FontInfo {
   created_at: number;
   // Localized names
   family_zh?: string;              // Chinese (PRC) family name
-  full_name_zh?: string;            // Chinese (PRC) full name
+  full_name_zh?: string;           // Chinese (PRC) full name
+  // CSS font-family 名称 - 浏览器匹配优先级: ID 16 > ID 1 > ID 21
+  css_font_family: string;         // 优先 Name ID 16 (Typographic Family)，回退到 ID 1
 }
 
 export type FontFormat = 'TrueType' | 'OpenType' | 'TrueTypeCollection' | 'Woff' | 'Woff2';

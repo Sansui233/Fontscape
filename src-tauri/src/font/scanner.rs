@@ -198,7 +198,10 @@ impl FontScanner {
         // Extract metadata
         let font_metadata = Self::extract_metadata(face);
 
-        
+        // Extract CSS font-family name (priority: ID 16 > ID 1 > ID 21)
+        let css_font_family = Self::extract_css_font_family(face);
+
+
         Ok(FontInfo {
             id,
             family,
@@ -218,7 +221,8 @@ impl FontScanner {
                 .unwrap()
                 .as_secs() as i64,
             family_zh,
-            full_name_zh
+            full_name_zh,
+            css_font_family,
         })
     }
 
@@ -274,6 +278,25 @@ impl FontScanner {
                 "Unknown".to_string()
             }
         })
+    }
+
+    /// Extract CSS font-family name with browser matching priority
+    /// Priority: Name ID 16 (Typographic Family) > Name ID 1 (Family) > Name ID 21 (WWS Family)
+    fn extract_css_font_family(face: &ttf_parser::Face) -> String {
+        // 1. Try Name ID 16 (Typographic Family / Preferred Family) - highest priority
+        if let Some(name) = Self::extract_name(face, 16) {
+            return name;
+        }
+        // 2. Fallback to Name ID 1 (Font Family Name) - standard
+        if let Some(name) = Self::extract_name(face, ttf_parser::name_id::FAMILY) {
+            return name;
+        }
+        // 3. Try Name ID 21 (WWS Family Name) - rarely used
+        if let Some(name) = Self::extract_name(face, 21) {
+            return name;
+        }
+        // 4. Final fallback
+        "Unknown".to_string()
     }
 
     /// Extract font metadata from OpenType/TrueType naming table

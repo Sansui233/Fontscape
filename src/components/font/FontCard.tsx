@@ -136,7 +136,7 @@ export function FontCard({ font, onShowInfo }: FontCardProps) {
           <div
             className="transition-all text-2xl leading-normal h-9 overflow-hidden"
             style={{
-              fontFamily: `"${font.family}", sans-serif`,
+              fontFamily: `"${font.css_font_family}", sans-serif`,
             }}
           >
             {displayText}
