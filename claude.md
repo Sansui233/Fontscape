@@ -1,4 +1,4 @@
-# Font Manager - 技术架构文档
+# Fontscape - 技术架构文档
 
 ## 1. 项目概述
 
@@ -193,7 +193,7 @@ dashmap = "6"                    # 并发HashMap
 │         │                   │                           │
 │         ▼                   ▼                           │
 │  ┌──────────────┐    ┌──────────────┐                  │
-│  │FontManager   │    │  FontParser  │                  │
+│  │Fontscape   │    │  FontParser  │                  │
 │  │              │    │              │                  │
 │  └──────┬───────┘    └──────┬───────┘                  │
 │         │                   │                           │
@@ -251,11 +251,11 @@ HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts
 ```rust
 use windows::Win32::System::Registry::*;
 
-pub struct FontManager {
+pub struct Fontscape {
     backup_dir: PathBuf,
 }
 
-impl FontManager {
+impl Fontscape {
     /// 禁用字体
     pub fn disable_font(&self, font_id: &str) -> Result<()> {
         // 1. 检查是否为系统关键字体

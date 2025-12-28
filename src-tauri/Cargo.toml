@@ -1,5 +1,5 @@
 [package]
-name = "font-manager"
+name = "fontscape"
 version = "0.1.0"
 description = "Modern font management tool for Windows"
 authors = ["you"]

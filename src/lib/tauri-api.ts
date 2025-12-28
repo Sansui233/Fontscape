@@ -13,6 +13,7 @@ const MOCK_FONTS: FontInfo[] = [
     fileSize: 524288,
     format: 'TrueType',
     is_variable: false,
+    weight: 400,
     languages: ['English'],
     scripts: ['Latn'],
     metadata: {
@@ -21,6 +22,7 @@ const MOCK_FONTS: FontInfo[] = [
     },
     status: 'Enabled',
     created_at: Date.now(),
+    css_font_family: 'Arial',
   },
   {
     id: '2',
@@ -32,6 +34,7 @@ const MOCK_FONTS: FontInfo[] = [
     fileSize: 1048576,
     format: 'TrueTypeCollection',
     is_variable: false,
+    weight: 400,
     languages: ['Chinese', 'English'],
     scripts: ['Hans', 'Latn'],
     metadata: {
@@ -40,6 +43,9 @@ const MOCK_FONTS: FontInfo[] = [
     },
     status: 'SystemFont',
     created_at: Date.now(),
+    family_zh: '微软雅黑',
+    full_name_zh: '微软雅黑 Regular',
+    css_font_family: 'Microsoft YaHei',
   },
   {
     id: '3',
@@ -51,6 +57,7 @@ const MOCK_FONTS: FontInfo[] = [
     fileSize: 612352,
     format: 'TrueType',
     is_variable: false,
+    weight: 400,
     languages: ['English'],
     scripts: ['Latn'],
     metadata: {
@@ -59,6 +66,7 @@ const MOCK_FONTS: FontInfo[] = [
     },
     status: 'Enabled',
     created_at: Date.now(),
+    css_font_family: 'Times New Roman',
   },
   {
     id: '4',
@@ -70,6 +78,7 @@ const MOCK_FONTS: FontInfo[] = [
     fileSize: 423456,
     format: 'TrueType',
     is_variable: false,
+    weight: 400,
     languages: ['English'],
     scripts: ['Latn'],
     metadata: {
@@ -78,6 +87,7 @@ const MOCK_FONTS: FontInfo[] = [
     },
     status: 'Enabled',
     created_at: Date.now(),
+    css_font_family: 'Courier New',
   },
   {
     id: '5',
@@ -89,6 +99,7 @@ const MOCK_FONTS: FontInfo[] = [
     fileSize: 753664,
     format: 'TrueType',
     is_variable: false,
+    weight: 400,
     languages: ['English'],
     scripts: ['Latn'],
     metadata: {
@@ -97,6 +108,7 @@ const MOCK_FONTS: FontInfo[] = [
     },
     status: 'Enabled',
     created_at: Date.now(),
+    css_font_family: 'Verdana',
   },
   {
     id: '6',
@@ -108,6 +120,7 @@ const MOCK_FONTS: FontInfo[] = [
     fileSize: 567808,
     format: 'TrueType',
     is_variable: false,
+    weight: 400,
     languages: ['English'],
     scripts: ['Latn'],
     metadata: {
@@ -116,6 +129,7 @@ const MOCK_FONTS: FontInfo[] = [
     },
     status: 'Enabled',
     created_at: Date.now(),
+    css_font_family: 'Georgia',
   },
 ];
 

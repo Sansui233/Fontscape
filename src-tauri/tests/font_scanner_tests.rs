@@ -3,8 +3,8 @@
 use std::path::PathBuf;
 
 // Import the font module from the main crate
-use font_manager::font::scanner::FontScanner;
-use font_manager::font::models::FontFormat;
+use fontscape::font::scanner::FontScanner;
+use fontscape::font::models::FontFormat;
 
 /// Integration test: Parse the LXGWWenKaiGBScreen font file
 /// This is a Chinese font that should have both English and Chinese localized names

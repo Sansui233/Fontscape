@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef } from "react";
 export function Topbar() {
   const { viewMode, setViewMode, previewText, setPreviewText } = useUIStore();
   const store = useUIStore();
-  const appName = store.language === 'zh-CN' ? '字体管理器' : 'Font Manager';
+  const appName = 'Fontscape';
 
   const debouncedSetSearch = useRef(
     debounceWithCallbackRef((text: string) => {

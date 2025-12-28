@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 // Use the library crate
-use font_manager::commands::*;
+use fontscape::commands::*;
 
 fn main() {
     tauri::Builder::default()

@@ -2,12 +2,10 @@ import { useEffect } from "react";
 import { FontGrid } from "./components/font/FontGrid";
 import { AppLayout } from "./components/layout/AppLayout";
 import { useFonts } from "./hooks/useFonts";
-import { useUIStore } from "./store/uiStore";
 
 function App() {
   const { fonts, isLoading } = useFonts();
-  const store = useUIStore();
-  const appName = store.language === 'zh-CN' ? '字体管理器' : 'Font Manager';
+  const appName = 'Fontscape';
 
   // Update document title based on locale
   useEffect(() => {
