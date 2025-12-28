@@ -1,4 +1,5 @@
 use super::models::*;
+use super::state::FontState;
 use std::fs;
 use std::path::PathBuf;
 use std::time::SystemTime;
@@ -27,8 +28,8 @@ impl FontScanner {
         }
     }
 
-    /// Scan all fonts in the system
-    pub fn scan_all_fonts(&self) -> Result<Vec<FontInfo>, String> {
+    /// Scan all fonts in the system and return FontState
+    pub fn scan_all_fonts(&self) -> Result<FontState, String> {
         let mut fonts = Vec::new();
         let mut errors = Vec::new();
 
@@ -84,7 +85,14 @@ impl FontScanner {
             }
         }
 
-        Ok(fonts)
+        // Create FontState which automatically aggregates CSS font families
+        let state = FontState::new(fonts);
+        println!(
+            "Aggregated into {} CSS font families",
+            state.css_font_family_count()
+        );
+
+        Ok(state)
     }
 
     /// Check if file is a font file

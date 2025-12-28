@@ -1,163 +1,173 @@
-import { FontInfo } from '@/types/font';
+import { FontState } from '@/types/font';
 import { invoke } from '@tauri-apps/api/core';
 
 // Mock data for development until backend is ready
-const MOCK_FONTS: FontInfo[] = [
-  {
-    id: '1',
-    family: 'Arial',
-    full_name: 'Arial Regular',
-    postscript_name: 'ArialMT',
-    style: 'Regular',
-    path: 'C:\\Windows\\Fonts\\arial.ttf',
-    fileSize: 524288,
-    format: 'TrueType',
-    is_variable: false,
-    weight: 400,
-    languages: ['English'],
-    scripts: ['Latn'],
-    metadata: {
-      designer: 'Robin Nicholas, Patricia Saunders',
-      manufacturer: 'Microsoft',
+const MOCK_FONT_STATE: FontState = {
+  fonts: [
+    {
+      id: '1',
+      family: 'Arial',
+      full_name: 'Arial Regular',
+      postscript_name: 'ArialMT',
+      style: 'Regular',
+      path: 'C:\\Windows\\Fonts\\arial.ttf',
+      fileSize: 524288,
+      format: 'TrueType',
+      is_variable: false,
+      weight: 400,
+      languages: ['English'],
+      scripts: ['Latn'],
+      metadata: {
+        designer: 'Robin Nicholas, Patricia Saunders',
+        manufacturer: 'Microsoft',
+      },
+      status: 'Enabled',
+      created_at: Date.now(),
+      css_font_family: 'Arial',
     },
-    status: 'Enabled',
-    created_at: Date.now(),
-    css_font_family: 'Arial',
-  },
-  {
-    id: '2',
-    family: 'Microsoft YaHei',
-    full_name: 'Microsoft YaHei Regular',
-    postscript_name: 'MicrosoftYaHei',
-    style: 'Regular',
-    path: 'C:\\Windows\\Fonts\\msyh.ttc',
-    fileSize: 1048576,
-    format: 'TrueTypeCollection',
-    is_variable: false,
-    weight: 400,
-    languages: ['Chinese', 'English'],
-    scripts: ['Hans', 'Latn'],
-    metadata: {
-      designer: 'Monotype',
-      manufacturer: 'Microsoft',
+    {
+      id: '2',
+      family: 'Microsoft YaHei',
+      full_name: 'Microsoft YaHei Regular',
+      postscript_name: 'MicrosoftYaHei',
+      style: 'Regular',
+      path: 'C:\\Windows\\Fonts\\msyh.ttc',
+      fileSize: 1048576,
+      format: 'TrueTypeCollection',
+      is_variable: false,
+      weight: 400,
+      languages: ['Chinese', 'English'],
+      scripts: ['Hans', 'Latn'],
+      metadata: {
+        designer: 'Monotype',
+        manufacturer: 'Microsoft',
+      },
+      status: 'SystemFont',
+      created_at: Date.now(),
+      family_zh: '微软雅黑',
+      full_name_zh: '微软雅黑 Regular',
+      css_font_family: 'Microsoft YaHei',
     },
-    status: 'SystemFont',
-    created_at: Date.now(),
-    family_zh: '微软雅黑',
-    full_name_zh: '微软雅黑 Regular',
-    css_font_family: 'Microsoft YaHei',
-  },
-  {
-    id: '3',
-    family: 'Times New Roman',
-    full_name: 'Times New Roman Regular',
-    postscript_name: 'TimesNewRomanPSMT',
-    style: 'Regular',
-    path: 'C:\\Windows\\Fonts\\times.ttf',
-    fileSize: 612352,
-    format: 'TrueType',
-    is_variable: false,
-    weight: 400,
-    languages: ['English'],
-    scripts: ['Latn'],
-    metadata: {
-      designer: 'Stanley Morison',
-      manufacturer: 'Microsoft',
+    {
+      id: '3',
+      family: 'Times New Roman',
+      full_name: 'Times New Roman Regular',
+      postscript_name: 'TimesNewRomanPSMT',
+      style: 'Regular',
+      path: 'C:\\Windows\\Fonts\\times.ttf',
+      fileSize: 612352,
+      format: 'TrueType',
+      is_variable: false,
+      weight: 400,
+      languages: ['English'],
+      scripts: ['Latn'],
+      metadata: {
+        designer: 'Stanley Morison',
+        manufacturer: 'Microsoft',
+      },
+      status: 'Enabled',
+      created_at: Date.now(),
+      css_font_family: 'Times New Roman',
     },
-    status: 'Enabled',
-    created_at: Date.now(),
-    css_font_family: 'Times New Roman',
-  },
-  {
-    id: '4',
-    family: 'Courier New',
-    full_name: 'Courier New Regular',
-    postscript_name: 'CourierNewPSMT',
-    style: 'Regular',
-    path: 'C:\\Windows\\Fonts\\cour.ttf',
-    fileSize: 423456,
-    format: 'TrueType',
-    is_variable: false,
-    weight: 400,
-    languages: ['English'],
-    scripts: ['Latn'],
-    metadata: {
-      designer: 'Adrian Frutiger',
-      manufacturer: 'Microsoft',
+    {
+      id: '4',
+      family: 'Courier New',
+      full_name: 'Courier New Regular',
+      postscript_name: 'CourierNewPSMT',
+      style: 'Regular',
+      path: 'C:\\Windows\\Fonts\\cour.ttf',
+      fileSize: 423456,
+      format: 'TrueType',
+      is_variable: false,
+      weight: 400,
+      languages: ['English'],
+      scripts: ['Latn'],
+      metadata: {
+        designer: 'Adrian Frutiger',
+        manufacturer: 'Microsoft',
+      },
+      status: 'Enabled',
+      created_at: Date.now(),
+      css_font_family: 'Courier New',
     },
-    status: 'Enabled',
-    created_at: Date.now(),
-    css_font_family: 'Courier New',
-  },
-  {
-    id: '5',
-    family: 'Verdana',
-    full_name: 'Verdana Regular',
-    postscript_name: 'Verdana',
-    style: 'Regular',
-    path: 'C:\\Windows\\Fonts\\verdana.ttf',
-    fileSize: 753664,
-    format: 'TrueType',
-    is_variable: false,
-    weight: 400,
-    languages: ['English'],
-    scripts: ['Latn'],
-    metadata: {
-      designer: 'Matthew Carter',
-      manufacturer: 'Microsoft',
+    {
+      id: '5',
+      family: 'Verdana',
+      full_name: 'Verdana Regular',
+      postscript_name: 'Verdana',
+      style: 'Regular',
+      path: 'C:\\Windows\\Fonts\\verdana.ttf',
+      fileSize: 753664,
+      format: 'TrueType',
+      is_variable: false,
+      weight: 400,
+      languages: ['English'],
+      scripts: ['Latn'],
+      metadata: {
+        designer: 'Matthew Carter',
+        manufacturer: 'Microsoft',
+      },
+      status: 'Enabled',
+      created_at: Date.now(),
+      css_font_family: 'Verdana',
     },
-    status: 'Enabled',
-    created_at: Date.now(),
-    css_font_family: 'Verdana',
-  },
-  {
-    id: '6',
-    family: 'Georgia',
-    full_name: 'Georgia Regular',
-    postscript_name: 'Georgia',
-    style: 'Regular',
-    path: 'C:\\Windows\\Fonts\\georgia.ttf',
-    fileSize: 567808,
-    format: 'TrueType',
-    is_variable: false,
-    weight: 400,
-    languages: ['English'],
-    scripts: ['Latn'],
-    metadata: {
-      designer: 'Matthew Carter',
-      manufacturer: 'Microsoft',
+    {
+      id: '6',
+      family: 'Georgia',
+      full_name: 'Georgia Regular',
+      postscript_name: 'Georgia',
+      style: 'Regular',
+      path: 'C:\\Windows\\Fonts\\georgia.ttf',
+      fileSize: 567808,
+      format: 'TrueType',
+      is_variable: false,
+      weight: 400,
+      languages: ['English'],
+      scripts: ['Latn'],
+      metadata: {
+        designer: 'Matthew Carter',
+        manufacturer: 'Microsoft',
+      },
+      status: 'Enabled',
+      created_at: Date.now(),
+      css_font_family: 'Georgia',
     },
-    status: 'Enabled',
-    created_at: Date.now(),
-    css_font_family: 'Georgia',
-  },
-];
+  ],
+  css_font_families: [
+    { name: 'Arial', font_count: 1, default_font_id: '1' },
+    { name: 'Courier New', font_count: 1, default_font_id: '4' },
+    { name: 'Georgia', font_count: 1, default_font_id: '6' },
+    { name: 'Microsoft YaHei', font_count: 1, default_font_id: '2' },
+    { name: 'Times New Roman', font_count: 1, default_font_id: '3' },
+    { name: 'Verdana', font_count: 1, default_font_id: '5' },
+  ],
+};
 
 const USE_MOCK = false; // Toggle for development
 
-export async function scanFonts(): Promise<FontInfo[]> {
+export async function scanFonts(): Promise<FontState> {
   if (USE_MOCK) {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 500));
-    return MOCK_FONTS;
+    return MOCK_FONT_STATE;
   }
 
   try {
-    return await invoke<FontInfo[]>('scan_fonts');
+    return await invoke<FontState>('scan_fonts');
   } catch (error) {
     console.error('Failed to scan fonts:', error);
     throw error;
   }
 }
 
-export async function refreshFonts(): Promise<FontInfo[]> {
+export async function refreshFonts(): Promise<FontState> {
   if (USE_MOCK) {
     await new Promise(resolve => setTimeout(resolve, 500));
-    return MOCK_FONTS;
+    return MOCK_FONT_STATE;
   }
 
   try {
-    return await invoke<FontInfo[]>('refresh_fonts');
+    return await invoke<FontState>('refresh_fonts');
   } catch (error) {
     console.error('Failed to refresh fonts:', error);
     throw error;

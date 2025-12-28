@@ -65,6 +65,14 @@ pub struct FontMetadata {
     pub postscript_cid: Option<String>,         // ID 20
 }
 
+/// CSS Font Family - groups fonts with the same css_font_family name
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CssFontFamily {
+    pub name: String,              // css_font_family 名称
+    pub font_count: usize,         // 该字体家族下的字体数量
+    pub default_font_id: String,   // 默认字体ID (weight最接近400的字体)
+}
+
 impl Default for FontMetadata {
     fn default() -> Self {
         Self {

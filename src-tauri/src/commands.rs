@@ -1,13 +1,13 @@
-use crate::font::{FontInfo, FontScanner, GlyphCheckResult, check_glyphs};
+use crate::font::{FontScanner, FontState, GlyphCheckResult, check_glyphs};
 
 #[tauri::command]
-pub async fn scan_fonts() -> Result<Vec<FontInfo>, String> {
+pub async fn scan_fonts() -> Result<FontState, String> {
     let scanner = FontScanner::new();
     scanner.scan_all_fonts()
 }
 
 #[tauri::command]
-pub async fn refresh_fonts() -> Result<Vec<FontInfo>, String> {
+pub async fn refresh_fonts() -> Result<FontState, String> {
     // Same as scan_fonts for now, can add caching later
     scan_fonts().await
 }

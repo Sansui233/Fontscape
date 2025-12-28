@@ -3,19 +3,25 @@ import { getFontWeightName } from "@/lib/font";
 import { checkGlyphsInFont, toggleFont } from "@/lib/tauri-api";
 import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
-import { FontInfo } from "@/types/font";
+import { CssFontFamily, FontInfo } from "@/types/font";
 import { Ban, Check, CheckSquare, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface FontCardProps {
-  font: FontInfo;
+  fontFamily: CssFontFamily;
   onShowInfo: (font: FontInfo) => void;
 }
 
-export function FontCard({ font, onShowInfo }: FontCardProps) {
+export function FontCard({ fontFamily, onShowInfo }: FontCardProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [isToggling, setIsToggling] = useState(false);
   const [displayText, setdisplayText] = useState("");
+  const { getFontById } = useFontStore();
+  const [font, _] = useState(getFontById(fontFamily.default_font_id))
+
+  if (!font) {
+    return null;
+  }
 
   const updateFontStatus = useFontStore((state) => state.updateFontStatus);
   const { multiSelectMode, selectedFontIds, toggleFontSelection, previewText } = useUIStore();
@@ -47,6 +53,7 @@ export function FontCard({ font, onShowInfo }: FontCardProps) {
 
   // 禁用/启用字体
   async function handleToggleFont() {
+    if (!font) return;
     if (font.status === "SystemFont") return;
 
     setIsToggling(true);
@@ -120,9 +127,10 @@ export function FontCard({ font, onShowInfo }: FontCardProps) {
             </div>
           </div>
         )}
+        <div className="absolute top-3 right-3 flex  space-x-2">
 
-        {/* 状态指示器 */}
-        <div className="absolute top-3 right-3">
+
+          {/* 状态指示器 */}
           <div
             className={`h-2 w-2 rounded-full ${font.status === 'Enabled' ? 'bg-green-500' :
               font.status === 'Disabled' ? 'bg-gray-400' :
@@ -142,14 +150,29 @@ export function FontCard({ font, onShowInfo }: FontCardProps) {
             }}
           >
             {displayText}
+            {/* 字体族指示器 */}
+
           </div>
         </div>
 
         {/* 字体信息 */}
         <div className="space-y-1">
-          <h3 className="font-semibold text-foreground truncate" title={font.full_name}>
-            {displayName}
-          </h3>
+          <div className="flex items-center space-x-1">
+            <h3 className="font-semibold text-foreground truncate" title={font.full_name}>
+              {displayName}
+            </h3>
+            {/* 可变字体指示器 */}
+            {font.is_variable &&
+              <div className="rounded-full px-2 py-0.5 bg-secondary text-secondary-foreground text-xs">
+                V
+              </div>}
+            {/* 字体族 */}
+            {fontFamily.font_count > 1 &&
+              <span className="rounded-full px-2 py-0.5 bg-gray-300 text-white text-xs">
+                F {fontFamily.font_count}
+              </span>
+            }
+          </div>
           <p className="text-sm text-muted-foreground">
             {getFontWeightName(font.weight)} • {font.format}
           </p>

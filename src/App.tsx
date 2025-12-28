@@ -4,7 +4,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { useFonts } from "./hooks/useFonts";
 
 function App() {
-  const { fonts, isLoading } = useFonts();
+  const { fontState, isLoading } = useFonts();
   const appName = 'Fontscape';
 
   // Update document title based on locale
@@ -21,14 +21,14 @@ function App() {
             <p className="mt-4 text-muted-foreground">Loading fonts...</p>
           </div>
         </div>
-      ) : (
+      ) : fontState ? (
         <div className="h-full flex flex-col p-6">
           {/* Font Grid with full height for virtual scrolling */}
           <div className="flex-1 min-h-0">
-            <FontGrid fonts={fonts} />
+            <FontGrid fontState={fontState} />
           </div>
         </div>
-      )}
+      ) : null}
     </AppLayout>
   );
 }

@@ -25,6 +25,19 @@ export interface FontInfo {
 export type FontFormat = 'TrueType' | 'OpenType' | 'TrueTypeCollection' | 'Woff' | 'Woff2';
 export type FontStatus = 'Enabled' | 'Disabled' | 'SystemFont';
 
+/// CSS Font Family - groups fonts with the same css_font_family name
+export interface CssFontFamily {
+  name: string;              // css_font_family 名称
+  font_count: number;        // 该字体家族下的字体数量
+  default_font_id: string;   // 默认字体ID (weight最接近400的字体)
+}
+
+/// FontState - stores scanned fonts and aggregated CSS font family data
+export interface FontState {
+  fonts: FontInfo[];
+  css_font_families: CssFontFamily[];
+}
+
 export interface FontMetadata {
   // OpenType Name IDs (0-20)
   copyright?: string;             // ID 0

@@ -21,7 +21,7 @@ fn test_font_info() {
     println!("📖 Testing: {}", font_path.display());
 
     let scanner = FontScanner::new();
-    let all_fonts = scanner.scan_all_fonts().unwrap();
+    let all_fonts = scanner.scan_all_fonts().unwrap().fonts;
 
     // Find the specific font we're testing
     let font = all_fonts.iter().find(|f| f.path.contains("SarasaGothicSC-Italic.ttf"));
@@ -89,7 +89,7 @@ fn test_metadata_extraction_ttf() {
 
     assert!(result.is_ok(), "Failed to scan fonts");
 
-    let all_fonts = result.unwrap();
+    let all_fonts = result.unwrap().fonts;
     let arial_font = all_fonts.iter().find(|f| f.family.contains("Arial") && f.style == "Regular");
 
     if let Some(font) = arial_font {
@@ -134,7 +134,7 @@ fn test_ttc_format() {
 
     assert!(result.is_ok(), "Failed to scan fonts");
 
-    let all_fonts = result.unwrap();
+    let all_fonts = result.unwrap().fonts;
     let yahei_fonts: Vec<_> = all_fonts
         .iter()
         .filter(|f| f.path.contains("msyh.ttc"))
@@ -163,7 +163,7 @@ fn test_language_detection() {
 
     assert!(result.is_ok(), "Failed to scan fonts");
 
-    let all_fonts = result.unwrap();
+    let all_fonts = result.unwrap().fonts;
 
     println!("📖 Testing: Language detection");
 
@@ -201,7 +201,7 @@ fn test_localized_names() {
 
     assert!(result.is_ok(), "Failed to scan fonts");
 
-    let all_fonts = result.unwrap();
+    let all_fonts = result.unwrap().fonts;
 
     println!("📖 Testing: Localized name extraction");
 
@@ -245,7 +245,7 @@ fn test_full_scan_statistics() {
 
     assert!(result.is_ok(), "Font scanning should succeed");
 
-    let fonts = result.unwrap();
+    let fonts = result.unwrap().fonts;
 
     println!("  Total fonts found: {}", fonts.len());
 

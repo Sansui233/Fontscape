@@ -1,4 +1,5 @@
 import { useFonts } from "@/hooks/useFonts";
+import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { LiHTMLAttributes } from "react";
@@ -10,28 +11,36 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed }: SidebarProps) {
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
-  const { fonts } = useFonts();
-  const store = useUIStore();
+  const { fontState } = useFonts();
+  const uiStore = useUIStore();
+  const { getFontById } = useFontStore();
 
   const countByLanguage = useCallback((lang: string) => {
+    if (!fontState) {
+      return 0;
+    }
     let count = 0;
-    fonts.forEach(font => {
-      if (font.languages.includes(lang)) {
+    fontState.css_font_families.forEach(fm => {
+      const font = getFontById(fm.default_font_id);
+      if (font && font.languages.includes(lang)) {
         count++;
       }
     });
     return count;
-  }, [fonts])
+  }, [fontState])
 
   const enabled_count = useCallback(() => {
+    if (!fontState) {
+      return 0;
+    }
     let count = 0;
-    fonts.forEach(font => {
+    fontState.fonts.forEach(font => {
       if (font.status !== "Disabled") {
         count++;
       }
     });
     return count
-  }, [fonts])
+  }, [fontState])
 
   return (
     <aside
@@ -60,7 +69,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
                 Categories
               </h2>
               <ul className="space-y-1">
-                <SidebarItem label="All Fonts" count={fonts.length} onClick={() => { store.setFilters({ languages: [], tags: [], searchText: store.filters.searchText }) }} />
+                <SidebarItem label="All Fonts" count={fontState?.css_font_families.length || 0} onClick={() => { uiStore.setFilters({ languages: [], tags: [], searchText: uiStore.filters.searchText }) }} />
                 <SidebarItem label="Recently Added" count={0} />
                 <SidebarItem label="Favorites" count={0} />
               </ul>
@@ -72,10 +81,10 @@ export function Sidebar({ collapsed }: SidebarProps) {
                 Languages
               </h2>
               <ul className="space-y-1">
-                <SidebarItem label="Unknown" count={countByLanguage("Unknown")} onClick={() => { store.setFilters({ languages: ["Unknown"], tags: [], searchText: store.filters.searchText }) }} />
-                <SidebarItem label="Chinese" count={countByLanguage("Chinese")} onClick={() => { store.setFilters({ languages: ["Chinese"], tags: [], searchText: store.filters.searchText }) }} />
-                <SidebarItem label="English" count={countByLanguage("English")} onClick={() => { store.setFilters({ languages: ["English"], tags: [], searchText: store.filters.searchText }) }} />
-                <SidebarItem label="Japanese" count={countByLanguage("Japanese")} onClick={() => { store.setFilters({ languages: ["Japanese"], tags: [], searchText: store.filters.searchText }) }} />
+                <SidebarItem label="Unknown" count={countByLanguage("Unknown")} onClick={() => { uiStore.setFilters({ languages: ["Unknown"], tags: [], searchText: uiStore.filters.searchText }) }} />
+                <SidebarItem label="Chinese" count={countByLanguage("Chinese")} onClick={() => { uiStore.setFilters({ languages: ["Chinese"], tags: [], searchText: uiStore.filters.searchText }) }} />
+                <SidebarItem label="English" count={countByLanguage("English")} onClick={() => { uiStore.setFilters({ languages: ["English"], tags: [], searchText: uiStore.filters.searchText }) }} />
+                <SidebarItem label="Japanese" count={countByLanguage("Japanese")} onClick={() => { uiStore.setFilters({ languages: ["Japanese"], tags: [], searchText: uiStore.filters.searchText }) }} />
               </ul>
             </div>
 
@@ -99,7 +108,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
               </h2>
               <ul className="space-y-1">
                 <SidebarItem label="Enabled" count={enabled_count()} />
-                <SidebarItem label="Disabled" count={fonts.length - enabled_count()} />
+                <SidebarItem label="Disabled" count={fontState ? fontState.fonts.length - enabled_count() : 0} />
               </ul>
             </div>
           </nav>

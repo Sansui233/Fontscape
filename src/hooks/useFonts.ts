@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
-import { useFontStore } from '@/store/fontStore';
 import { scanFonts } from '@/lib/tauri-api';
+import { useFontStore } from '@/store/fontStore';
+import { useEffect } from 'react';
 
 export function useFonts() {
-  const fonts = useFontStore((state) => state.fonts);
+  const fontState = useFontStore((state) => state.fontState);
   const isLoading = useFontStore((state) => state.isLoading);
-  const setFonts = useFontStore((state) => state.setFonts);
+  const setFontState = useFontStore((state) => state.setFontState);
   const setIsLoading = useFontStore((state) => state.setIsLoading);
 
   useEffect(() => {
@@ -15,8 +15,8 @@ export function useFonts() {
   async function loadFonts() {
     setIsLoading(true);
     try {
-      const fontList = await scanFonts();
-      setFonts(fontList);
+      const fontState = await scanFonts();
+      setFontState(fontState);
     } catch (error) {
       console.error('Failed to load fonts:', error);
     } finally {
@@ -25,7 +25,7 @@ export function useFonts() {
   }
 
   return {
-    fonts,
+    fontState,
     isLoading,
     refreshFonts: loadFonts,
   };

@@ -1,16 +1,18 @@
+import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
-import { FontInfo } from "@/types/font";
+import { FontInfo, FontState } from "@/types/font";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FontCard } from "./FontCard";
 import { FontInfoModal } from "./FontInfoModal";
 
 interface FontGridProps {
-  fonts: FontInfo[];
+  fontState: FontState;
 }
 
-export function FontGrid({ fonts }: FontGridProps) {
-  const store = useUIStore();
+export function FontGrid({ fontState }: FontGridProps) {
+  const uiStore = useUIStore();
+  const fontStore = useFontStore();
   const parentRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(3);
   const [selectedFont, setSelectedFont] = useState<FontInfo | null>(null);
@@ -35,13 +37,20 @@ export function FontGrid({ fonts }: FontGridProps) {
     return () => window.removeEventListener('resize', updateColumns);
   }, []);
 
-  const filtered_fonts = useMemo(() => {
-    const filters = store.filters ?? {};
+  if (!fontState) {
+    return null;
+  }
+
+  const filtered_font_families = useMemo(() => {
+    const filters = uiStore.filters ?? {};
     const langFilters = Array.isArray(filters.languages) ? filters.languages : [];
     const searchText = filters.searchText?.toLowerCase().trim() || '';
     // const tagFilters = Array.isArray(filters.tags) ? filters.tags : [];
 
-    return fonts.filter((font) => {
+    return fontState.css_font_families.filter((fm) => {
+      const font = fontStore.getFontById(fm.default_font_id);
+      if (!font) return false;
+
       // 如果没有语言过滤，则不过滤语言；否则要求字体包含所有选中的语言
       if (langFilters.length > 0 && !langFilters.every((l) => font.languages.includes(l))) {
         return false;
@@ -70,11 +79,11 @@ export function FontGrid({ fonts }: FontGridProps) {
       }
 
       return true;
-    });
-  }, [store.filters, fonts]);
+    })
+  }, [uiStore.filters, fontState]);
 
   // Calculate number of rows based on columns
-  const rowCount = Math.ceil(filtered_fonts.length / columns);
+  const rowCount = Math.ceil(filtered_font_families.length / columns);
 
   // Create virtualizer for rows
   const rowVirtualizer = useVirtualizer({
@@ -84,7 +93,7 @@ export function FontGrid({ fonts }: FontGridProps) {
     overscan: 5, // Render 5 extra rows above and below viewport
   });
 
-  if (fonts.length === 0) {
+  if (fontState.fonts.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">No fonts found</p>
@@ -92,7 +101,7 @@ export function FontGrid({ fonts }: FontGridProps) {
     );
   }
 
-  if (filtered_fonts.length === 0) {
+  if (filtered_font_families.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">No fonts match your filters</p>
@@ -112,7 +121,7 @@ export function FontGrid({ fonts }: FontGridProps) {
         >
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const startIdx = virtualRow.index * columns;
-            const rowFonts = filtered_fonts.slice(startIdx, startIdx + columns);
+            const rowFontFamilies = filtered_font_families.slice(startIdx, startIdx + columns);
 
             return (
               <div
@@ -127,10 +136,10 @@ export function FontGrid({ fonts }: FontGridProps) {
                 }}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-1">
-                  {rowFonts.map((font) => (
+                  {rowFontFamilies.map((fm) => (
                     <FontCard
-                      key={font.id}
-                      font={font}
+                      key={fm.name}
+                      fontFamily={fm}
                       onShowInfo={setSelectedFont}
                     />
                   ))}
