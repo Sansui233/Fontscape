@@ -62,11 +62,3 @@ export interface FontMetadata {
   sample_text?: string;            // ID 19
   postscript_cid?: string;         // ID 20
 }
-
-export interface FontCategory {
-  languages: string[];
-  fontType: FontType;
-  familyGroup: string;
-}
-
-export type FontType = 'Serif' | 'SansSerif' | 'Monospace' | 'Handwriting' | 'Decorative';

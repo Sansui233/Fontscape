@@ -1,17 +1,18 @@
+import { FontInfoModal } from "@/components/font/FontInfoModal";
+import { RightSidebar } from "@/components/layout/RightSidebar";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
 import { FontInfo } from "@/types/font";
-import { Info, ArrowLeft } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router";
-import { FontInfoModal } from "@/components/font/FontInfoModal";
-import { RightSidebar } from "@/components/layout/RightSidebar";
+import { ArrowLeft, Info, Italic } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router";
+import "./FontFamilyPage.css";
 
 // 预览文本模板
 const PREVIEW_TEXTS = {
   lorem: "The quick brown fox jumps over the lazy dog. 0123456789",
-  simplifiedChinese: "落霞与孤鹜齐飞，秋水共长天一色。",
+  simplifiedChinese: "天地玄黄，宇宙洪荒。日月盈昃，辰宿列张。",
   traditionalChinese: "落霞與孤鶩齊飛，秋水共長天一色。",
   japanese: "いろはにほへと ちりぬるを わかよたれそ",
   korean: "다람쥐 헌 쳇바퀴에 타고파",
@@ -21,18 +22,32 @@ const PREVIEW_TEXTS = {
 export function FontFamilyPage() {
   const { familyName } = useParams<{ familyName: string }>();
   const navigate = useNavigate();
-  const { language } = useUIStore();
+  const {
+    language,
+    detailPreviewFontSize,
+    detailPreviewFontWeight,
+    detailPreviewItalic,
+    setDetailPreviewFontSize,
+    setDetailPreviewFontWeight,
+    setDetailPreviewItalic,
+  } = useUIStore();
   const { getFontsByCssFamily, fontState } = useFontStore();
 
   // 页面内部选中的字体（用于预览和右侧栏）
   const [selectedFont, setSelectedFont] = useState<FontInfo | null>(null);
   // 右键菜单状态
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; font: FontInfo } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    font: FontInfo;
+  } | null>(null);
   // 详情 Modal
   const [infoFont, setInfoFont] = useState<FontInfo | null>(null);
 
   // 获取该 family 下的所有字体
-  const familyFonts = familyName ? getFontsByCssFamily(decodeURIComponent(familyName)) : [];
+  const familyFonts = familyName
+    ? getFontsByCssFamily(decodeURIComponent(familyName))
+    : [];
 
   // 找到对应的 CssFontFamily
   const cssFontFamily = fontState?.css_font_families.find(
@@ -40,7 +55,9 @@ export function FontFamilyPage() {
   );
 
   // 默认字体
-  const defaultFont = familyFonts.find((f) => f.id === cssFontFamily?.default_font_id) || familyFonts[0];
+  const defaultFont =
+    familyFonts.find((f) => f.id === cssFontFamily?.default_font_id) ||
+    familyFonts[0];
 
   // 当前预览用的字体
   const previewFont = selectedFont || defaultFont;
@@ -65,7 +82,9 @@ export function FontFamilyPage() {
 
   // 获取显示名称
   const getDisplayName = (font: FontInfo) => {
-    return (language === 'zh-CN' && font.family_zh) ? font.family_zh : font.family;
+    return language === "zh-CN" && font.family_zh
+      ? font.family_zh
+      : font.family;
   };
 
   // 根据字体支持的字符集获取预览文本
@@ -74,16 +93,16 @@ export function FontFamilyPage() {
 
     const texts = [PREVIEW_TEXTS.lorem];
 
-    if (font.charsets.includes('Hans')) {
+    if (font.charsets.includes("Hans")) {
       texts.push(PREVIEW_TEXTS.simplifiedChinese);
     }
-    if (font.charsets.includes('Hant')) {
+    if (font.charsets.includes("Hant")) {
       texts.push(PREVIEW_TEXTS.traditionalChinese);
     }
-    if (font.charsets.includes('Jpan')) {
+    if (font.charsets.includes("Jpan")) {
       texts.push(PREVIEW_TEXTS.japanese);
     }
-    if (font.charsets.includes('Kore')) {
+    if (font.charsets.includes("Kore")) {
       texts.push(PREVIEW_TEXTS.korean);
     }
 
@@ -91,15 +110,17 @@ export function FontFamilyPage() {
   };
 
   // 右键菜单项
-  const menuItems = contextMenu ? [
-    {
-      label: "Info",
-      icon: <Info className="w-4 h-4" />,
-      onClick: () => {
-        setInfoFont(contextMenu.font);
-      },
-    },
-  ] : [];
+  const menuItems = contextMenu
+    ? [
+        {
+          label: "Info",
+          icon: <Info className="w-4 h-4" />,
+          onClick: () => {
+            setInfoFont(contextMenu.font);
+          },
+        },
+      ]
+    : [];
 
   if (!previewFont || familyFonts.length === 0) {
     return (
@@ -137,17 +158,92 @@ export function FontFamilyPage() {
 
             {/* 预览区域 */}
             <div className="bg-card rounded-lg border border-border p-6 mb-8">
-              <h3 className="text-sm font-medium text-muted-foreground mb-4">Preview</h3>
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Preview
+                </h3>
+                <div className="flex items-center gap-6 mr-2">
+                  {/* 字体大小滑块 */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                      Size:
+                    </label>
+                    <input
+                      type="range"
+                      min="8"
+                      max="48"
+                      step="2"
+                      value={detailPreviewFontSize}
+                      onChange={(e) =>
+                        setDetailPreviewFontSize(Number(e.target.value))
+                      }
+                      className="minimal-slider w-24"
+                    />
+                    <input
+                      type="number"
+                      min="12"
+                      max="96"
+                      value={detailPreviewFontSize}
+                      onChange={(e) =>
+                        setDetailPreviewFontSize(Number(e.target.value))
+                      }
+                      className="w-14 px-2 py-1 text-xs border border-border rounded bg-background"
+                    />
+                  </div>
+                  {/* 字重滑块 */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                      Weight:
+                    </label>
+                    <input
+                      type="range"
+                      min="100"
+                      max="900"
+                      step="100"
+                      value={detailPreviewFontWeight}
+                      onChange={(e) =>
+                        setDetailPreviewFontWeight(Number(e.target.value))
+                      }
+                      className="minimal-slider w-24"
+                    />
+                    <input
+                      type="number"
+                      min="100"
+                      max="900"
+                      step="100"
+                      value={detailPreviewFontWeight}
+                      onChange={(e) =>
+                        setDetailPreviewFontWeight(Number(e.target.value))
+                      }
+                      className="w-14 px-2 py-1 text-xs border border-border rounded bg-background"
+                    />
+                  </div>
+                  {/* 斜体切换 */}
+                  <button
+                    onClick={() => setDetailPreviewItalic(!detailPreviewItalic)}
+                    className={`p-2 rounded transition-colors ${
+                      detailPreviewItalic
+                        ? "bg-foreground text-background"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                    title="Toggle italic"
+                  >
+                    <Italic className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
               <div className="space-y-6">
                 {getPreviewTexts(previewFont).map((text, idx) => (
                   <div
                     key={idx}
                     contentEditable={true}
                     suppressContentEditableWarning={true}
-                    className="text-3xl leading-relaxed outline-none focus:ring-2 focus:ring-primary/20 rounded px-2 py-1"
+                    className="leading-relaxed outline-none focus:ring-2 focus:ring-primary/20 rounded px-2 py-1"
                     style={{
                       fontFamily: `"${previewFont.css_font_family}", sans-serif`,
-                      fontWeight: previewFont.weight,
+                      fontSize: `${detailPreviewFontSize}px`,
+                      fontWeight: detailPreviewFontWeight,
+                      fontStyle: detailPreviewItalic ? "italic" : "normal",
                     }}
                   >
                     {text}
@@ -172,9 +268,10 @@ export function FontFamilyPage() {
                       className={`
                         p-4 rounded-lg border cursor-pointer transition-all
                         hover:shadow-md hover:border-primary
-                        ${selectedFont?.id === font.id
-                          ? 'ring-2 ring-primary border-primary bg-primary/5'
-                          : 'border-border bg-card'
+                        ${
+                          selectedFont?.id === font.id
+                            ? "ring-2 ring-primary border-primary bg-primary/5"
+                            : "border-border bg-card"
                         }
                       `}
                     >
@@ -220,10 +317,7 @@ export function FontFamilyPage() {
 
       {/* 详情 Modal */}
       {infoFont && (
-        <FontInfoModal
-          font={infoFont}
-          onClose={() => setInfoFont(null)}
-        />
+        <FontInfoModal font={infoFont} onClose={() => setInfoFont(null)} />
       )}
     </>
   );

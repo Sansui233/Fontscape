@@ -88,19 +88,6 @@ export function Sidebar({ collapsed }: SidebarProps) {
               </ul>
             </div>
 
-            {/* Font Types */}
-            <div>
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
-                Types
-              </h2>
-              <ul className="space-y-1">
-                <SidebarItem label="Sans Serif" count={0} />
-                <SidebarItem label="Serif" count={0} />
-                <SidebarItem label="Monospace" count={0} />
-                <SidebarItem label="Handwriting" count={0} />
-              </ul>
-            </div>
-
             {/* Status */}
             <div>
               <h2 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
