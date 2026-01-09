@@ -4,7 +4,7 @@ import { useUIStore } from "@/store/uiStore";
 import { FontInfo, FontState } from "@/types/font";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Italic } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router";
 import { useDebouncedCallback } from "use-debounce";
 import "./ListView.css";
@@ -160,29 +160,45 @@ export function ListView() {
     getScrollElement: () => parentRef.current,
     estimateSize: () => 60,
     overscan: 8,
+    initialOffset: scrollPositions.get("/list") || 0,
   });
 
-  // Scroll restoration
-  useEffect(() => {
+  rowVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = (
+    item,
+    delta,
+    instance
+  ) => {
+    // 向上滚动（Backward）时，如果变动的项在当前可见范围的第一项之前
+    // 则返回 true，通知虚拟化库自动补偿 scrollOffset
+    return item.index < (instance.getVirtualItems()[0]?.index ?? 0);
+  };
+
+  // Scroll restoration 预防抖动
+  useLayoutEffect(() => {
+    if (!parentRef.current) return;
+
+    const checkScrolling = () => {
+      if (!rowVirtualizer.isScrolling) {
+        setIsRestored(true);
+        console.debug("Scroll position alreadyrestored", savedPosition);
+      } else {
+        console.debug("is scroliing, wait...");
+        requestAnimationFrame(checkScrolling);
+      }
+    };
+
     const savedPosition = scrollPositions.get("/list");
-    if (!savedPosition) {
-      setIsRestored(true);
+
+    if (parentRef.current && savedPosition === parentRef.current.scrollTop) {
+      // The position is already correct
+      // but virtualizer may still in scrolling
+      requestAnimationFrame(checkScrolling);
       return;
     }
 
-    if (savedPosition !== undefined && parentRef.current) {
-      setIsRestored(false);
-      parentRef.current.scrollTop = savedPosition;
-
-      const checkScrolling = () => {
-        if (!rowVirtualizer.isScrolling) {
-          setIsRestored(true);
-        } else {
-          requestAnimationFrame(checkScrolling);
-        }
-      };
-      requestAnimationFrame(checkScrolling);
-    }
+    console.debug("Fallback: Restoring scroll position to", savedPosition);
+    parentRef.current.scrollTop = savedPosition ?? 0;
+    requestAnimationFrame(checkScrolling);
   }, [location.key, rowVirtualizer]);
 
   const saveScrollPosition = useDebouncedCallback(() => {

@@ -2,7 +2,7 @@ import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
 import { FontState } from "@/types/font";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { useDebouncedCallback } from "use-debounce";
 import { FontCard } from "./FontCard";
@@ -77,37 +77,35 @@ export function FontGrid({ fontState }: FontGridProps) {
     getScrollElement: () => parentRef.current,
     estimateSize: () => 200, // Estimated card height + gap
     overscan: 2, // Render 2 extra rows above and below viewport
+    initialOffset: scrollPositions.get(location.key) || 0,
   });
 
   // 恢复滚动位置 - 监听 virtualizer.isScrolling 来判断何时完成
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!parentRef.current) return;
+
+    const checkScrolling = () => {
+      if (!rowVirtualizer.isScrolling) {
+        setIsRestored(true);
+        console.debug("Scroll position alreadyrestored", savedPosition);
+      } else {
+        console.debug("is scroliing, wait...");
+        requestAnimationFrame(checkScrolling);
+      }
+    };
+
     const savedPosition = scrollPositions.get(location.key);
-    console.debug("[usetEffect] restoring Scroll Top:", {
-      savedPosition,
-      locationKey: location.key,
-    });
-    if (!savedPosition) {
-      setIsRestored(true); // first load, no saved position
+
+    if (parentRef.current && savedPosition === parentRef.current.scrollTop) {
+      // The position is already correct
+      // but virtualizer may still in scrolling
+      requestAnimationFrame(checkScrolling);
       return;
     }
 
-    if (savedPosition !== undefined && parentRef.current) {
-      setIsRestored(false);
-
-      // 设置滚动位置
-      parentRef.current.scrollTop = savedPosition;
-
-      // 监听 isScrolling 变化，等待 virtualizer 完成重新计算。
-      const checkScrolling = () => {
-        if (!rowVirtualizer.isScrolling) {
-          setIsRestored(true);
-        } else {
-          requestAnimationFrame(checkScrolling);
-        }
-      };
-
-      requestAnimationFrame(checkScrolling);
-    }
+    console.debug("Fallback: Restoring scroll position to", savedPosition);
+    parentRef.current.scrollTop = savedPosition ?? 0;
+    requestAnimationFrame(checkScrolling);
   }, [location.key, rowVirtualizer]);
 
   // Debounced 保存滚动位置
