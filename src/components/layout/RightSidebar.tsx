@@ -1,5 +1,4 @@
 import { FontInfo } from "@/types/font";
-import { useUIStore } from "@/store/uiStore";
 import { FileText, Folder, Info } from "lucide-react";
 
 interface RightSidebarProps {
@@ -7,10 +6,7 @@ interface RightSidebarProps {
 }
 
 export function RightSidebar({ font }: RightSidebarProps) {
-  const { activeFontFamily } = useUIStore();
-
   // 只在 Modal 打开时显示
-  const isOpen = activeFontFamily !== null;
 
   if (!font) {
     return null;
@@ -28,7 +24,7 @@ export function RightSidebar({ font }: RightSidebarProps) {
     if (path.length <= 50) return path;
     const parts = path.split(/[/\\]/);
     if (parts.length <= 3) return path;
-    return `${parts[0]}\\...\\${parts.slice(-2).join('\\')}`;
+    return `${parts[0]}\\...\\${parts.slice(-2).join("\\")}`;
   };
 
   // Name Table 元数据条目
@@ -40,21 +36,23 @@ export function RightSidebar({ font }: RightSidebarProps) {
     { label: "License", value: font.metadata.license },
     { label: "Description", value: font.metadata.description },
     { label: "Trademark", value: font.metadata.trademark },
-  ].filter(entry => entry.value);
+  ].filter((entry) => entry.value);
 
   return (
     <div
       className={`
         absolute top-0 right-0 bottom-0 w-80 bg-card border-l border-border
         transform transition-transform duration-300 ease-in-out z-30
-        ${isOpen ? 'translate-x-0' : 'translate-x-full'}
         overflow-y-auto
       `}
     >
       <div className="p-6 space-y-6">
         {/* 标题 */}
         <div>
-          <h2 className="text-lg font-semibold text-foreground truncate" title={font.full_name}>
+          <h2
+            className="text-lg font-semibold text-foreground truncate"
+            title={font.full_name}
+          >
             {font.full_name}
           </h2>
           <p className="text-sm text-muted-foreground">{font.style}</p>
@@ -79,7 +77,9 @@ export function RightSidebar({ font }: RightSidebarProps) {
             </div>
             <div>
               <span className="text-muted-foreground">Size: </span>
-              <span className="text-foreground">{formatFileSize(font.fileSize)}</span>
+              <span className="text-foreground">
+                {formatFileSize(font.fileSize)}
+              </span>
             </div>
             <div>
               <span className="text-muted-foreground">Weight: </span>
@@ -106,7 +106,9 @@ export function RightSidebar({ font }: RightSidebarProps) {
               {metadataEntries.map((entry, idx) => (
                 <div key={idx}>
                   <span className="text-muted-foreground">{entry.label}: </span>
-                  <span className="text-foreground break-words">{entry.value}</span>
+                  <span className="text-foreground break-words">
+                    {entry.value}
+                  </span>
                 </div>
               ))}
             </div>
