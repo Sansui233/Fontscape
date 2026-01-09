@@ -1,21 +1,55 @@
 import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
-import { FontInfo, FontState } from "@/types/font";
+import { FontState } from "@/types/font";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FontCard } from "./FontCard";
-import { FontInfoModal } from "./FontInfoModal";
+import { useLocation } from "react-router";
+import { useDebouncedCallback } from "use-debounce";
 
 interface FontGridProps {
   fontState: FontState;
 }
+
+// 存储滚动位置
+const scrollPositions = new Map<string, number>();
 
 export function FontGrid({ fontState }: FontGridProps) {
   const uiStore = useUIStore();
   const fontStore = useFontStore();
   const parentRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(3);
-  const [selectedFont, setSelectedFont] = useState<FontInfo | null>(null);
+  const location = useLocation();
+  const [isRestored, setIsRestored] = useState(false);
+
+  // 恢复滚动位置
+  useEffect(() => {
+    setIsRestored(false); // 先隐藏内容
+    const savedPosition = scrollPositions.get(location.key);
+    if (savedPosition !== undefined && parentRef.current) {
+      parentRef.current.scrollTop = savedPosition;
+    }
+    // 使用 requestAnimationFrame 确保滚动位置已恢复
+    requestAnimationFrame(() => {
+      setIsRestored(true); // 恢复后显示内容
+    });
+  }, [location.key]);
+
+  // Debounced 保存滚动位置
+  const saveScrollPosition = useDebouncedCallback(() => {
+    if (parentRef.current) {
+      scrollPositions.set(location.key, parentRef.current.scrollTop);
+    }
+  }, 100);
+
+  // 监听滚动事件
+  useEffect(() => {
+    const element = parentRef.current;
+    if (!element) return;
+
+    element.addEventListener('scroll', saveScrollPosition);
+    return () => element.removeEventListener('scroll', saveScrollPosition);
+  }, [location.key, saveScrollPosition]);
 
   // Update columns based on window width (matching Tailwind breakpoints)
   useEffect(() => {
@@ -120,6 +154,8 @@ export function FontGrid({ fontState }: FontGridProps) {
             height: `${rowVirtualizer.getTotalSize()}px`,
             width: '100%',
             position: 'relative',
+            opacity: isRestored ? 1 : 0,
+            transition: 'opacity 200ms ease-in',
           }}
         >
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
@@ -143,7 +179,6 @@ export function FontGrid({ fontState }: FontGridProps) {
                     <FontCard
                       key={fm.name}
                       fontFamily={fm}
-                      onShowInfo={setSelectedFont}
                     />
                   ))}
                 </div>
@@ -152,14 +187,6 @@ export function FontGrid({ fontState }: FontGridProps) {
           })}
         </div>
       </div>
-
-      {/* Modal rendered outside the virtual scroll container */}
-      {selectedFont && (
-        <FontInfoModal
-          font={selectedFont}
-          onClose={() => setSelectedFont(null)}
-        />
-      )}
     </>
   );
 }

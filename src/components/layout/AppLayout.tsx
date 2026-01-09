@@ -12,16 +12,12 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      {/* Topbar */}
       <Topbar />
 
-      {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
         <Sidebar collapsed={sidebarCollapsed} />
 
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto bg-background">
+        <main className="flex-1 overflow-hidden bg-background relative">
           {children}
         </main>
       </div>

@@ -10,7 +10,8 @@ export interface FontInfo {
   format: FontFormat;
   is_variable: boolean;
   weight: number;              // 字重值 (100-900)，由 OS/2 usWeightClass 或 fvar wght 轴获取
-  languages: string[];
+  charsets: string[];          // 字符集支持 (Latn/Hans/Hant/Jpan/Kore/Cyrl 等)
+  languages: string[];         // 计算后的语言支持 (English/Chinese/Japanese/Korean/Russian 等)
   scripts: string[];
   metadata: FontMetadata;
   status: FontStatus;

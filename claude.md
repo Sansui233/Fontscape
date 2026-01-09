@@ -985,8 +985,11 @@ export function useLazyFont(fontFamily: string) {
 
 ### Phase 3: 字体预览 (Week 3-4)
 - [x] 实现字体网格布局
-- [ ] 集成虚拟滚动
-- [x] 实现字体卡片组件
+- [x] 集成虚拟滚动 (@tanstack/react-virtual)
+- [x] 实现字体卡片组件（翻页书角设计、状态指示器）
+- [x] 字体家族详情页（FontFamilyPage with overlay）
+- [x] 右侧栏显示字体元数据（RightSidebar）
+- [x] 滚动位置恢复（scroll position restoration）
 - [ ] 添加预览控制（字体大小、预览文本）
 - [ ] 字体懒加载优化
 
@@ -1003,16 +1006,17 @@ export function useLazyFont(fontFamily: string) {
 - [ ] 操作反馈和错误处理
 
 ### Phase 6: 分类和过滤 (Week 6-7)
-- [ ] 实现字体分类算法
-- [ ] 侧栏过滤器UI
-- [ ] 多条件过滤逻辑
+- [x] 实现字体分类算法（charset检测：Latn/Hans/Hant/Jpan/Kore/Cyrl/Arab）
+- [x] 语言计算逻辑（从charset推导languages）
+- [x] 侧栏过滤器UI（按语言过滤）
+- [x] 多条件过滤逻辑（语言+搜索）
 - [ ] 自定义标签系统
 
 ### Phase 7: 字体详情 (Week 7-8)
-- [ ] 实现详情页布局
-- [ ] 字体元数据展示
-- [ ] 多种预览模板
-- [ ] 详情页路由
+- [x] 实现详情页布局（FontFamilyPage overlay）
+- [x] 字体元数据展示（RightSidebar with Name Table）
+- [x] 多种预览模板（Lorem ipsum、数字、多语言示例）
+- [x] 详情页路由（React Router 7）
 
 ### Phase 8: 优化和测试 (Week 8-9)
 - [ ] 性能优化
@@ -1079,6 +1083,6 @@ export function useLazyFont(fontFamily: string) {
 
 ---
 
-**文档版本**: 1.0
-**最后更新**: 2025-12-11
+**文档版本**: 1.1
+**最后更新**: 2026-01-09
 **作者**: Claude Code

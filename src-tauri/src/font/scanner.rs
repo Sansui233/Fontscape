@@ -194,7 +194,7 @@ impl FontScanner {
         let id = format!("{:x}", md5::compute(id_source.as_bytes()));
 
         // Detect languages and scripts
-        let (languages, scripts) = Self::detect_languages_and_scripts(face);
+        let (charsets, languages, scripts) = Self::detect_charsets_and_languages(face);
 
         // Check if system font
         let status = if Self::is_system_font(&family) {
@@ -224,6 +224,7 @@ impl FontScanner {
             format,
             is_variable: face.is_variable(),
             weight,
+            charsets,
             languages,
             scripts,
             metadata: font_metadata,
@@ -367,61 +368,115 @@ impl FontScanner {
     }
 
     /// Detect supported languages and scripts by checking character coverage
-    fn detect_languages_and_scripts(face: &ttf_parser::Face) -> (Vec<String>, Vec<String>) {
-        let mut languages = Vec::new();
+    /// Detect charsets and calculate languages
+    /// Returns: (charsets, languages, scripts)
+    fn detect_charsets_and_languages(face: &ttf_parser::Face) -> (Vec<String>, Vec<String>, Vec<String>) {
+        let mut charsets = Vec::new();
         let mut scripts = Vec::new();
 
-        // Check for Latin characters (English)
-        // Use common Latin letters
+        // Check for Latin characters
         if face.glyph_index('A').is_some() && face.glyph_index('a').is_some() {
-            languages.push("English".to_string());
+            charsets.push("Latn".to_string());
             scripts.push("Latn".to_string());
         }
 
-        // Check for Chinese characters (Simplified Chinese)
-        // Use characters that are unique to Chinese
-        // "觉" (jue) - common simplified Chinese character
+        // Check for Chinese Simplified (Hans)
+        // '觉' is simplified Chinese character
         if face.glyph_index('觉').is_some() {
-            languages.push("Chinese".to_string());
+            charsets.push("Hans".to_string());
             scripts.push("Hans".to_string());
         }
 
-        // Check for Japanese characters
-        // "あ" - first hiragana character
-        if face.glyph_index('あ').is_some() {
-            languages.push("Japanese".to_string());
+        // Check for Chinese Traditional (Hant)
+        // '獨' is traditional Chinese character (simplified: 独)
+        if face.glyph_index('獨').is_some() {
+            charsets.push("Hant".to_string());
+            scripts.push("Hant".to_string());
+        }
+
+        // Check for Japanese
+        // 'あ' - hiragana, '発' - shinjitai (new Japanese character)
+        // Both must exist for complete Japanese charset
+        if face.glyph_index('あ').is_some() && face.glyph_index('発').is_some() {
+            charsets.push("Jpan".to_string());
             scripts.push("Jpan".to_string());
         }
 
-        // Check for Korean characters
-        // "가" - first Hangul syllable
+        // Check for Korean
+        // '가' - Hangul
         if face.glyph_index('가').is_some() {
-            languages.push("Korean".to_string());
+            charsets.push("Kore".to_string());
             scripts.push("Kore".to_string());
         }
 
         // Check for Cyrillic (Russian)
-        // "А" - Cyrillic capital A
-        // "Я" - Cyrillic Ya
         if face.glyph_index('А').is_some() && face.glyph_index('я').is_some() {
-            languages.push("Russian".to_string());
+            charsets.push("Cyrl".to_string());
             scripts.push("Cyrl".to_string());
         }
 
         // Check for Arabic
-        // "ا" - Arabic letter Alef
         if face.glyph_index('ا').is_some() {
-            languages.push("Arabic".to_string());
+            charsets.push("Arab".to_string());
             scripts.push("Arab".to_string());
         }
 
-        // If no languages detected at all, mark as Unknown
-        if languages.is_empty() {
-            languages.push("Unknown".to_string());
+        // Calculate languages from charsets
+        let languages = Self::calculate_languages(&charsets);
+
+        // If no charsets detected, mark as Unknown
+        if charsets.is_empty() {
+            charsets.push("Unknown".to_string());
             scripts.push("Unknown".to_string());
         }
 
-        (languages, scripts)
+        (charsets, languages, scripts)
+    }
+
+    /// Calculate languages from charsets
+    fn calculate_languages(charsets: &[String]) -> Vec<String> {
+        let mut languages = Vec::new();
+
+        // English: only Latn charset (no CJK)
+        let has_latn = charsets.contains(&"Latn".to_string());
+        let has_cjk = charsets.iter().any(|c|
+            c == "Hans" || c == "Hant" || c == "Jpan" || c == "Kore"
+        );
+        if has_latn && !has_cjk {
+            languages.push("English".to_string());
+        }
+
+        // Chinese: has Hans or Hant
+        if charsets.contains(&"Hans".to_string()) || charsets.contains(&"Hant".to_string()) {
+            languages.push("Chinese".to_string());
+        }
+
+        // Japanese: has Jpan
+        if charsets.contains(&"Jpan".to_string()) {
+            languages.push("Japanese".to_string());
+        }
+
+        // Korean: has Kore
+        if charsets.contains(&"Kore".to_string()) {
+            languages.push("Korean".to_string());
+        }
+
+        // Russian: has Cyrl
+        if charsets.contains(&"Cyrl".to_string()) {
+            languages.push("Russian".to_string());
+        }
+
+        // Arabic: has Arab
+        if charsets.contains(&"Arab".to_string()) {
+            languages.push("Arabic".to_string());
+        }
+
+        // If no languages calculated, mark as Unknown
+        if languages.is_empty() {
+            languages.push("Unknown".to_string());
+        }
+
+        languages
     }
 
     /// Check if font is a system critical font

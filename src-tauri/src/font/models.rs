@@ -12,8 +12,9 @@ pub struct FontInfo {
     pub format: FontFormat,      // 由文件扩展名判定 (.ttf/.otf/.ttc)
     pub is_variable: bool,       // 由 ttf_parser::Face::is_variable() 判定
     pub weight: u16,             // 字重值 (100-900)，由 OS/2 usWeightClass 或 fvar wght 轴获取
-    pub languages: Vec<String>,  // 由 Glyph 覆盖范围判定 (检测特定字符是否存在)
-    pub scripts: Vec<String>,    // 由 Glyph 覆盖范围判定 (Latn/Hans/Jpan/Kore/Cyrl/Arab)
+    pub charsets: Vec<String>,   // 字符集支持 (Latn/Hans/Hant/Jpan/Kore/Cyrl 等)
+    pub languages: Vec<String>,  // 计算后的语言支持 (English/Chinese/Japanese/Korean/Russian 等)
+    pub scripts: Vec<String>,    // 由 Glyph 覆盖范围判定 (Latn/Hans/Jpan/Kore/Cyrl/Arab) - 保留兼容
     pub metadata: FontMetadata,  // OpenType Name Table 完整信息 (ID 0-20)
     pub status: FontStatus,      // 由 is_system_font() 判定系统字体，否则默认 Enabled
     pub created_at: i64,         // 扫描时的 Unix 时间戳
