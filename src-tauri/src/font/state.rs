@@ -123,6 +123,7 @@ mod tests {
             is_variable: false,
             weight,
             languages: vec!["English".to_string()],
+            charsets: vec!["Latin".to_string()],
             scripts: vec!["Latn".to_string()],
             metadata: FontMetadata::default(),
             status: FontStatus::Enabled,

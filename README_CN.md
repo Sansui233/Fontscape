@@ -104,6 +104,11 @@ fontscape/
 - [ ] 阶段 8：性能优化
 - [ ] 阶段 9：打磨和发布
 
+## Todo
+
+- [ ] AI Tagging
+- [ ] 滚动更新
+
 ## 贡献
 
 欢迎贡献代码！请随时提交 Pull Request。

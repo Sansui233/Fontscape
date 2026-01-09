@@ -11,7 +11,8 @@ import { RightSidebar } from "@/components/layout/RightSidebar";
 // 预览文本模板
 const PREVIEW_TEXTS = {
   lorem: "The quick brown fox jumps over the lazy dog. 0123456789",
-  chinese: "天地玄黄，宇宙洪荒。日月盈昃，辰宿列张。",
+  simplifiedChinese: "落霞与孤鹜齐飞，秋水共长天一色。",
+  traditionalChinese: "落霞與孤鶩齊飛，秋水共長天一色。",
   japanese: "いろはにほへと ちりぬるを わかよたれそ",
   korean: "다람쥐 헌 쳇바퀴에 타고파",
   numbers: "0123456789 !@#$%^&*()",
@@ -67,19 +68,22 @@ export function FontFamilyPage() {
     return (language === 'zh-CN' && font.family_zh) ? font.family_zh : font.family;
   };
 
-  // 根据字体支持的语言获取预览文本
+  // 根据字体支持的字符集获取预览文本
   const getPreviewTexts = (font: FontInfo | null) => {
     if (!font) return [PREVIEW_TEXTS.lorem];
 
     const texts = [PREVIEW_TEXTS.lorem];
 
-    if (font.languages.some(l => l.toLowerCase().includes('chinese') || l === 'Hans' || l === 'Hant')) {
-      texts.push(PREVIEW_TEXTS.chinese);
+    if (font.charsets.includes('Hans')) {
+      texts.push(PREVIEW_TEXTS.simplifiedChinese);
     }
-    if (font.languages.some(l => l.toLowerCase().includes('japanese') || l === 'Jpan')) {
+    if (font.charsets.includes('Hant')) {
+      texts.push(PREVIEW_TEXTS.traditionalChinese);
+    }
+    if (font.charsets.includes('Jpan')) {
       texts.push(PREVIEW_TEXTS.japanese);
     }
-    if (font.languages.some(l => l.toLowerCase().includes('korean') || l === 'Kore')) {
+    if (font.charsets.includes('Kore')) {
       texts.push(PREVIEW_TEXTS.korean);
     }
 
@@ -138,7 +142,9 @@ export function FontFamilyPage() {
                 {getPreviewTexts(previewFont).map((text, idx) => (
                   <div
                     key={idx}
-                    className="text-3xl leading-relaxed"
+                    contentEditable={true}
+                    suppressContentEditableWarning={true}
+                    className="text-3xl leading-relaxed outline-none focus:ring-2 focus:ring-primary/20 rounded px-2 py-1"
                     style={{
                       fontFamily: `"${previewFont.css_font_family}", sans-serif`,
                       fontWeight: previewFont.weight,
