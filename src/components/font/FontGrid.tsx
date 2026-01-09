@@ -80,16 +80,25 @@ export function FontGrid({ fontState }: FontGridProps) {
     initialOffset: scrollPositions.get(location.key) || 0,
   });
 
-  // 恢复滚动位置 - 监听 virtualizer.isScrolling 来判断何时完成
+  // Scroll Upward 预防抖动
+  useEffect(() => {
+    rowVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = () => {
+      // return item.index < (instance.getVirtualItems()[0]?.index ?? 0);
+      if (isRestored) {
+        return false;
+      }
+      return true;
+    };
+  }, [isRestored, rowVirtualizer]);
+
+  // Scroll restoration 预防抖动, 监听 virtualizer.isScrolling 来判断何时完成
   useLayoutEffect(() => {
     if (!parentRef.current) return;
 
     const checkScrolling = () => {
       if (!rowVirtualizer.isScrolling) {
         setIsRestored(true);
-        console.debug("Scroll position alreadyrestored", savedPosition);
       } else {
-        console.debug("is scroliing, wait...");
         requestAnimationFrame(checkScrolling);
       }
     };

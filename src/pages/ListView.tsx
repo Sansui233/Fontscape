@@ -61,7 +61,21 @@ function ListRow({
   const languages = font.languages.map(simplifyLanguage).slice(0, 3);
 
   return (
-    <div className="list-row min-h-[60px]" onClick={onNavigate}>
+    <div
+      className="list-row"
+      style={{
+        // prevent virtual list scroll up jitter
+        // virtualizer 会在元素挂载前根据元素高度和 estimate 值提前占位。但不是所有情况都是提前知道元素高度
+        // 在官方示例中，子元素 height 是不同的固定数值的。我测下来 minHeight 使用固定数值也可以。
+        // https://stackblitz.com/edit/tanstack-query-p2sjt5nc?file=src%2Fpages%2Findex.js
+        // 如果 height / minHeight 为 auto，则会导致抖动，因为不知道元素高度
+        // 以及，他们的 measureElement 方法没缓存，也无法使用缓存值去占位（有也会面临 window resize 的问题）
+        // see https://github.com/TanStack/virtual/issues/659
+        // minHeight: 20, // test
+        height: fontSize * 1.2 + 25,
+      }}
+      onClick={onNavigate}
+    >
       <div
         className="list-cell preview-cell"
         style={{
@@ -159,19 +173,9 @@ export function ListView() {
     count: filtered_font_families.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 60,
-    overscan: 8,
+    overscan: 5,
     initialOffset: scrollPositions.get("/list") || 0,
   });
-
-  rowVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = (
-    item,
-    delta,
-    instance
-  ) => {
-    // 向上滚动（Backward）时，如果变动的项在当前可见范围的第一项之前
-    // 则返回 true，通知虚拟化库自动补偿 scrollOffset
-    return item.index < (instance.getVirtualItems()[0]?.index ?? 0);
-  };
 
   // Scroll restoration 预防抖动
   useLayoutEffect(() => {
