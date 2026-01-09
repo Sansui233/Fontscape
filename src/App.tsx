@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { AppLayout } from "./components/layout/AppLayout";
-import { Outlet, ScrollRestoration } from "react-router";
+import { Outlet } from "react-router";
 import { useFonts } from "./hooks/useFonts";
 
 function App() {
@@ -14,7 +14,6 @@ function App() {
   return (
     <AppLayout>
       <Outlet context={{ fontState, isLoading }} />
-      <ScrollRestoration />
     </AppLayout>
   );
 }

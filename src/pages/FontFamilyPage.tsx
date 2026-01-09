@@ -119,7 +119,7 @@ export function FontFamilyPage() {
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => navigate("/")}
+                  onClick={() => navigate(-1)}
                   className="p-2 rounded-lg hover:bg-muted transition-colors"
                   title="Back to grid"
                 >
