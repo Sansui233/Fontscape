@@ -132,16 +132,17 @@ impl FontScanner {
 
         for face_index in 0..face_count {
             match ttf_parser::Face::parse(&data, face_index) {
-                Ok(face) => {
-                    match self.create_font_info(&face, path, &metadata, format.clone()) {
-                        Ok(font_info) => {
-                            fonts.push(font_info);
-                        }
-                        Err(e) => {
-                            println!("Failed to create font info for {:?} face {}: {}", path, face_index, e);
-                        }
+                Ok(face) => match self.create_font_info(&face, path, &metadata, format.clone()) {
+                    Ok(font_info) => {
+                        fonts.push(font_info);
                     }
-                }
+                    Err(e) => {
+                        println!(
+                            "Failed to create font info for {:?} face {}: {}",
+                            path, face_index, e
+                        );
+                    }
+                },
                 Err(e) => {
                     if face_index == 0 {
                         // Only report error for the first face
@@ -170,24 +171,28 @@ impl FontScanner {
         // Extract font names with fallbacks (English)
         let family = Self::extract_name_with_fallback(face, ttf_parser::name_id::FAMILY);
         let full_name = Self::extract_name_with_fallback(face, ttf_parser::name_id::FULL_NAME);
-        let postscript_name = Self::extract_name_with_fallback(face, ttf_parser::name_id::POST_SCRIPT_NAME);
+        let postscript_name =
+            Self::extract_name_with_fallback(face, ttf_parser::name_id::POST_SCRIPT_NAME);
         let style = Self::extract_name(face, ttf_parser::name_id::SUBFAMILY)
             .unwrap_or_else(|| "Regular".to_string());
 
         // Extract Chinese (PRC) localized names - language_id = 0x0804
-        let mut family_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FAMILY, 0x0804);
-        let mut full_name_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FULL_NAME, 0x0804);
+        let mut family_zh =
+            Self::extract_name_by_language(face, ttf_parser::name_id::FAMILY, 0x0804);
+        let mut full_name_zh =
+            Self::extract_name_by_language(face, ttf_parser::name_id::FULL_NAME, 0x0804);
         // If not found try language_id = 0x0c04 (Hong Kong)
         if family_zh.is_none() {
             family_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FAMILY, 0x1004);
-            full_name_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FULL_NAME, 0x1004);
+            full_name_zh =
+                Self::extract_name_by_language(face, ttf_parser::name_id::FULL_NAME, 0x1004);
         }
         // If still not found, try Taiwan (0x0404)
         if family_zh.is_none() {
             family_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FAMILY, 0x0404);
-            full_name_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FULL_NAME, 0x0404);
+            full_name_zh =
+                Self::extract_name_by_language(face, ttf_parser::name_id::FULL_NAME, 0x0404);
         }
-
 
         // Generate unique ID
         let id_source = format!("{}-{}-{}", path.to_string_lossy(), family, style);
@@ -211,7 +216,6 @@ impl FontScanner {
 
         // Extract font weight (priority: fvar wght axis for variable fonts > OS/2 usWeightClass)
         let weight = Self::extract_weight(face);
-
 
         Ok(FontInfo {
             id,
@@ -267,7 +271,11 @@ impl FontScanner {
     }
 
     /// Extract ot name for specific language
-    fn extract_name_by_language(face: &ttf_parser::Face, name_id: u16, language_id: u16) -> Option<String> {
+    fn extract_name_by_language(
+        face: &ttf_parser::Face,
+        name_id: u16,
+        language_id: u16,
+    ) -> Option<String> {
         for name in face.names() {
             if name.name_id == name_id && name.language_id == language_id {
                 if name.is_unicode() {
@@ -342,35 +350,37 @@ impl FontScanner {
     fn extract_metadata(face: &ttf_parser::Face) -> FontMetadata {
         FontMetadata {
             // Standard Name IDs (0-14) - Available in most fonts
-            copyright: Self::extract_name(face, ttf_parser::name_id::COPYRIGHT_NOTICE),         // 0
-            family_name: Self::extract_name(face, ttf_parser::name_id::FAMILY),                 // 1
-            subfamily_name: Self::extract_name(face, ttf_parser::name_id::SUBFAMILY),           // 2
-            unique_identifier: Self::extract_name(face, ttf_parser::name_id::UNIQUE_ID),        // 3
-            full_name: Self::extract_name(face, ttf_parser::name_id::FULL_NAME),                // 4
-            version: Self::extract_name(face, ttf_parser::name_id::VERSION),                    // 5
-            postscript_name: Self::extract_name(face, ttf_parser::name_id::POST_SCRIPT_NAME),   // 6
-            trademark: Self::extract_name(face, ttf_parser::name_id::TRADEMARK),                // 7
-            manufacturer: Self::extract_name(face, ttf_parser::name_id::MANUFACTURER),          // 8
-            designer: Self::extract_name(face, ttf_parser::name_id::DESIGNER),                  // 9
-            description: Self::extract_name(face, ttf_parser::name_id::DESCRIPTION),            // 10
-            vendor_url: Self::extract_name(face, ttf_parser::name_id::VENDOR_URL),              // 11
-            designer_url: Self::extract_name(face, ttf_parser::name_id::DESIGNER_URL),          // 12
-            license: Self::extract_name(face, ttf_parser::name_id::LICENSE),                    // 13
-            license_url: Self::extract_name(face, ttf_parser::name_id::LICENSE_URL),            // 14
+            copyright: Self::extract_name(face, ttf_parser::name_id::COPYRIGHT_NOTICE), // 0
+            family_name: Self::extract_name(face, ttf_parser::name_id::FAMILY),         // 1
+            subfamily_name: Self::extract_name(face, ttf_parser::name_id::SUBFAMILY),   // 2
+            unique_identifier: Self::extract_name(face, ttf_parser::name_id::UNIQUE_ID), // 3
+            full_name: Self::extract_name(face, ttf_parser::name_id::FULL_NAME),        // 4
+            version: Self::extract_name(face, ttf_parser::name_id::VERSION),            // 5
+            postscript_name: Self::extract_name(face, ttf_parser::name_id::POST_SCRIPT_NAME), // 6
+            trademark: Self::extract_name(face, ttf_parser::name_id::TRADEMARK),        // 7
+            manufacturer: Self::extract_name(face, ttf_parser::name_id::MANUFACTURER),  // 8
+            designer: Self::extract_name(face, ttf_parser::name_id::DESIGNER),          // 9
+            description: Self::extract_name(face, ttf_parser::name_id::DESCRIPTION),    // 10
+            vendor_url: Self::extract_name(face, ttf_parser::name_id::VENDOR_URL),      // 11
+            designer_url: Self::extract_name(face, ttf_parser::name_id::DESIGNER_URL),  // 12
+            license: Self::extract_name(face, ttf_parser::name_id::LICENSE),            // 13
+            license_url: Self::extract_name(face, ttf_parser::name_id::LICENSE_URL),    // 14
 
             // Extended Name IDs (16-20) - May not be present in all fonts
-            typographic_family: Self::extract_name(face, 16),                                   // 16 - Preferred Family
-            typographic_subfamily: Self::extract_name(face, 17),                                // 17 - Preferred Subfamily
-            compatible_full: Self::extract_name(face, 18),                                      // 18 - Compatible Full Name
-            sample_text: Self::extract_name(face, 19),                                          // 19 - Sample Text
-            postscript_cid: Self::extract_name(face, 20),                                       // 20 - PostScript CID
+            typographic_family: Self::extract_name(face, 16), // 16 - Preferred Family
+            typographic_subfamily: Self::extract_name(face, 17), // 17 - Preferred Subfamily
+            compatible_full: Self::extract_name(face, 18),    // 18 - Compatible Full Name
+            sample_text: Self::extract_name(face, 19),        // 19 - Sample Text
+            postscript_cid: Self::extract_name(face, 20),     // 20 - PostScript CID
         }
     }
 
     /// Detect supported languages and scripts by checking character coverage
     /// Detect charsets and calculate languages
     /// Returns: (charsets, languages, scripts)
-    fn detect_charsets_and_languages(face: &ttf_parser::Face) -> (Vec<String>, Vec<String>, Vec<String>) {
+    fn detect_charsets_and_languages(
+        face: &ttf_parser::Face,
+    ) -> (Vec<String>, Vec<String>, Vec<String>) {
         let mut charsets = Vec::new();
         let mut scripts = Vec::new();
 
@@ -382,14 +392,21 @@ impl FontScanner {
 
         // Check for Chinese Simplified (Hans)
         // '觉' is simplified Chinese character
-        if face.glyph_index('觉').is_some() {
+        if face.glyph_index('觉').is_some()
+            && face.glyph_index('天').is_some()
+            && face.glyph_index('黄').is_some()
+            && face.glyph_index('龙').is_some()
+        {
             charsets.push("Hans".to_string());
             scripts.push("Hans".to_string());
         }
 
         // Check for Chinese Traditional (Hant)
         // '獨' is traditional Chinese character (simplified: 独)
-        if face.glyph_index('獨').is_some() {
+        if face.glyph_index('獨').is_some()
+            && face.glyph_index('聲').is_some()
+            && face.glyph_index('壞').is_some()
+        {
             charsets.push("Hant".to_string());
             scripts.push("Hant".to_string());
         }
@@ -397,7 +414,7 @@ impl FontScanner {
         // Check for Japanese
         // 'あ' - hiragana, '発' - shinjitai (new Japanese character)
         // Both must exist for complete Japanese charset
-        if face.glyph_index('あ').is_some() && face.glyph_index('発').is_some() {
+        if face.glyph_index('あ').is_some() && face.glyph_index('壊').is_some() {
             charsets.push("Jpan".to_string());
             scripts.push("Jpan".to_string());
         }
@@ -439,9 +456,9 @@ impl FontScanner {
 
         // English: only Latn charset (no CJK)
         let has_latn = charsets.contains(&"Latn".to_string());
-        let has_cjk = charsets.iter().any(|c|
-            c == "Hans" || c == "Hant" || c == "Jpan" || c == "Kore"
-        );
+        let has_cjk = charsets
+            .iter()
+            .any(|c| c == "Hans" || c == "Hant" || c == "Jpan" || c == "Kore");
         if has_latn && !has_cjk {
             languages.push("English".to_string());
         }
@@ -481,12 +498,7 @@ impl FontScanner {
 
     /// Check if font is a system critical font
     fn is_system_font(family: &str) -> bool {
-        const SYSTEM_FONTS: &[&str] = &[
-            "Segoe UI",
-            "Microsoft YaHei",
-            "SimSun",
-            "Tahoma",
-        ];
+        const SYSTEM_FONTS: &[&str] = &["Segoe UI", "Microsoft YaHei", "SimSun", "Tahoma"];
 
         SYSTEM_FONTS.iter().any(|&f| family.contains(f))
     }
