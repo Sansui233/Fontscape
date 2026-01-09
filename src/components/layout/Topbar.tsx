@@ -2,10 +2,13 @@ import { debounceWithCallbackRef } from "@/lib/utils";
 import { useUIStore } from "@/store/uiStore";
 import { Grid3x3, List, Search, Settings, Type } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router";
 
 export function Topbar() {
   const { viewMode, setViewMode, previewText, setPreviewText } = useUIStore();
   const store = useUIStore();
+  const navigate = useNavigate();
+  const location = useLocation();
   const appName = 'Fontscape';
 
   const debouncedSetSearch = useRef(
@@ -124,7 +127,10 @@ export function Topbar() {
         {/* View mode toggle */}
         <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
           <button
-            onClick={() => setViewMode('grid')}
+            onClick={() => {
+              setViewMode('grid');
+              if (location.pathname !== '/') navigate('/');
+            }}
             className={`p-2 rounded transition-colors ${viewMode === 'grid'
               ? 'bg-background shadow-sm'
               : 'hover:bg-background/50'
@@ -134,7 +140,10 @@ export function Topbar() {
             <Grid3x3 className="h-4 w-4" />
           </button>
           <button
-            onClick={() => setViewMode('list')}
+            onClick={() => {
+              setViewMode('list');
+              if (location.pathname !== '/list') navigate('/list');
+            }}
             className={`p-2 rounded transition-colors ${viewMode === 'list'
               ? 'bg-background shadow-sm'
               : 'hover:bg-background/50'

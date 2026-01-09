@@ -138,7 +138,7 @@ export function FontFamilyPage() {
       {/* 覆盖层 - 覆盖在 main 区域 */}
       <div className="absolute inset-0 flex bg-background overflow-hidden">
         {/* 主内容区 - 为右侧栏留出空间 */}
-        <div className="flex-1 overflow-auto p-8 mr-80">
+        <div className="flex-1 overflow-auto p-8 mr-[280px]">
           <div className="max-w-4xl mx-auto">
             {/* 头部 */}
             <div className="flex items-center justify-between mb-8">

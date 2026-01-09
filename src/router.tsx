@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 import App from "./App";
 import { HomePage } from "./pages/HomePage";
 import { FontFamilyPage } from "./pages/FontFamilyPage";
+import { ListView } from "./pages/ListView";
 
 export const router = createBrowserRouter([
   {
@@ -11,6 +12,10 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <HomePage />,
+      },
+      {
+        path: "list",
+        element: <ListView />,
       },
       {
         path: "family/:familyName",

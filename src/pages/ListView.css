@@ -1,0 +1,66 @@
+.list-row {
+  display: grid;
+  grid-template-columns: 2fr auto auto auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 24px;
+  border-bottom: 1px solid hsl(var(--border));
+  transition: background-color 150ms;
+  cursor: pointer;
+}
+
+.list-row:hover {
+  background-color: hsl(var(--muted) / 0.5);
+}
+
+.list-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.preview-cell {
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.tag-cell {
+  min-height: 20px;
+}
+
+.lang-cell {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.lang-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border-radius: 4px;
+}
+
+.name-cell {
+  font-weight: 500;
+  max-width: 14em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-cell {
+  display: flex;
+  justify-content: center;
+  width: 10px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}

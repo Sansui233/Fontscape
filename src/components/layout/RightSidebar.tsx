@@ -41,7 +41,7 @@ export function RightSidebar({ font }: RightSidebarProps) {
   return (
     <div
       className={`
-        absolute top-0 right-0 bottom-0 w-80 bg-card border-l border-border
+        absolute top-0 right-0 bottom-0 w-[280px] bg-card border-l border-border
         transform transition-transform duration-300 ease-in-out z-30
         overflow-y-auto
       `}
@@ -64,7 +64,7 @@ export function RightSidebar({ font }: RightSidebarProps) {
             <Folder className="w-4 h-4" />
             File Info
           </h3>
-          <div className="text-sm space-y-2 pl-6">
+          <div className="text-sm space-y-2">
             <div>
               <span className="text-muted-foreground">Path: </span>
               <span className="text-foreground break-all" title={font.path}>
@@ -102,7 +102,7 @@ export function RightSidebar({ font }: RightSidebarProps) {
               <FileText className="w-4 h-4" />
               Name Table
             </h3>
-            <div className="text-sm space-y-2 pl-6">
+            <div className="text-sm space-y-2">
               {metadataEntries.map((entry, idx) => (
                 <div key={idx}>
                   <span className="text-muted-foreground">{entry.label}: </span>
@@ -122,7 +122,7 @@ export function RightSidebar({ font }: RightSidebarProps) {
               <Info className="w-4 h-4" />
               Languages
             </h3>
-            <div className="flex flex-wrap gap-1 pl-6">
+            <div className="flex flex-wrap gap-1">
               {font.languages.map((lang) => (
                 <span
                   key={lang}
@@ -139,7 +139,7 @@ export function RightSidebar({ font }: RightSidebarProps) {
         {font.scripts.length > 0 && (
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-foreground">Scripts</h3>
-            <div className="flex flex-wrap gap-1 pl-6">
+            <div className="flex flex-wrap gap-1">
               {font.scripts.map((script) => (
                 <span
                   key={script}

@@ -76,7 +76,7 @@ export function FontGrid({ fontState }: FontGridProps) {
     count: rowCount,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 200, // Estimated card height + gap
-    overscan: 5, // Render 5 extra rows above and below viewport
+    overscan: 2, // Render 2 extra rows above and below viewport
   });
 
   // 恢复滚动位置 - 监听 virtualizer.isScrolling 来判断何时完成
@@ -188,13 +188,15 @@ export function FontGrid({ fontState }: FontGridProps) {
             return (
               <div
                 key={virtualRow.key}
+                data-index={virtualRow.index}
+                ref={rowVirtualizer.measureElement}
                 style={{
                   position: "absolute",
                   top: 0,
                   left: 0,
                   width: "100%",
-                  height: `${virtualRow.size}px`,
                   transform: `translateY(${virtualRow.start}px)`,
+                  paddingBottom: "24px",
                 }}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-1">
