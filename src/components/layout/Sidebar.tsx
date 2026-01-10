@@ -3,7 +3,7 @@ import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { LiHTMLAttributes } from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -15,6 +15,27 @@ export function Sidebar({ collapsed }: SidebarProps) {
   const uiStore = useUIStore();
   const { getFontById } = useFontStore();
   const [isHovered, setIsHovered] = useState(false);
+  const leaveTimeoutRef = useRef<number | null>(null);
+  const asideRef = useRef<HTMLElement>(null);
+
+  const handleMouseEnter = () => {
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
+    if (collapsed) setIsHovered(true);
+  };
+
+  const handleTriggerLeave = (e: React.MouseEvent) => {
+    // If moving to aside, don't collapse
+    if (asideRef.current?.contains(e.relatedTarget as Node)) {
+      return;
+    }
+    // Otherwise start delayed collapse
+    leaveTimeoutRef.current = window.setTimeout(() => {
+      setIsHovered(false);
+    }, 500);
+  };
 
   const countByLanguage = useCallback(
     (lang: string) => {
@@ -48,26 +69,26 @@ export function Sidebar({ collapsed }: SidebarProps) {
 
   return (
     <>
-      {/* Hover trigger when collapsed */}
-      {collapsed && (
-        <div
-          className="fixed left-0 top-0 bottom-0 w-8 z-40"
-          onMouseEnter={() => setIsHovered(true)}
-        />
-      )}
-
       {/* Sidebar */}
       <aside
-        onMouseEnter={() => collapsed && setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className={`z-4 relative border-r border-border bg-background transition-all duration-300 ${
+        ref={asideRef}
+        onMouseEnter={handleMouseEnter}
+        className={`border-r border-border bg-background transition-all duration-300 w-64 ${
           collapsed
-            ? isHovered
-              ? "fixed left-0 top-0 bottom-0 w-64 z-50 shadow-lg"
-              : "translate-x-[-100%]"
-            : "translate-x-0 w-64"
+            ? `absolute left-0 top-0 bottom-0 z-50 ${
+                isHovered ? "translate-x-0 shadow-lg" : "-translate-x-full"
+              }`
+            : "relative z-4 translate-x-0"
         }`}
       >
+        {/* Hover trigger when collapsed - positioned at right edge */}
+        {collapsed && (
+          <div
+            className="absolute -right-8 top-0 bottom-0 w-8 z-40"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleTriggerLeave}
+          />
+        )}
         {/* Collapse toggle */}
         <button
           onClick={toggleSidebar}

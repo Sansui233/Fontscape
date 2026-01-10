@@ -14,7 +14,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className="flex flex-col h-screen overflow-hidden">
       <Topbar />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         <Sidebar collapsed={sidebarCollapsed} />
 
         <main className="flex-1 overflow-hidden bg-background relative">
