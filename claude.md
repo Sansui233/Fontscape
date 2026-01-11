@@ -157,6 +157,21 @@ rayon = "1.10"                   # 并行处理
 dashmap = "6"                    # 并发HashMap
 ```
 
+### 3.4 编码规范
+
+#### Rust 平台特定代码
+- **Windows-only 功能必须使用 `#[cfg(target_os = "windows")]` 宏**
+- 示例：
+```rust
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn open_in_explorer(path: String) -> Result<(), String> {
+    // Windows-specific implementation
+}
+```
+- 避免在非 Windows 平台编译时出错
+- 保持代码的跨平台兼容性（即使当前只支持 Windows）
+
 ---
 
 ## 4. 架构设计

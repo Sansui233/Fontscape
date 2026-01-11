@@ -1,11 +1,49 @@
 import { FontInfo } from "@/types/font";
-import { FileText, Folder, Info } from "lucide-react";
+import { FileText, Folder, Info, ExternalLink } from "lucide-react";
+import { openInExplorer } from "@/lib/tauri-api";
+import { useUIStore } from "@/store/uiStore";
+import { useState, useRef, useEffect } from "react";
 
 interface RightSidebarProps {
   font: FontInfo | null;
 }
 
 export function RightSidebar({ font }: RightSidebarProps) {
+  const { rightSidebarWidth, setRightSidebarWidth } = useUIStore();
+  const [isResizing, setIsResizing] = useState(false);
+  const [tempWidth, setTempWidth] = useState(rightSidebarWidth);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+
+      const newWidth = window.innerWidth - e.clientX;
+      // Constrain width between 240px and 600px
+      const constrainedWidth = Math.max(240, Math.min(600, newWidth));
+      setTempWidth(constrainedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      // Update store only when resizing ends
+      setRightSidebarWidth(tempWidth);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, tempWidth, setRightSidebarWidth]);
   // 只在 Modal 打开时显示
 
   if (!font) {
@@ -40,12 +78,15 @@ export function RightSidebar({ font }: RightSidebarProps) {
 
   return (
     <div
-      className={`
-        absolute top-0 right-0 bottom-0 w-[280px] bg-card border-l border-border
-        transform transition-transform duration-300 ease-in-out z-30
-        overflow-y-auto
-      `}
+      ref={sidebarRef}
+      className="absolute top-0 right-0 bottom-0 bg-card border-l border-border z-30 overflow-y-auto"
+      style={{ width: `${isResizing ? tempWidth : rightSidebarWidth}px` }}
     >
+      {/* Resize handle */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/50 transition-colors"
+        onMouseDown={() => setIsResizing(true)}
+      />
       <div className="p-6 space-y-6">
         {/* 标题 */}
         <div>
@@ -65,11 +106,20 @@ export function RightSidebar({ font }: RightSidebarProps) {
             File Info
           </h3>
           <div className="text-sm space-y-2">
-            <div>
-              <span className="text-muted-foreground">Path: </span>
-              <span className="text-foreground break-all" title={font.path}>
-                {formatPath(font.path)}
-              </span>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <span className="text-muted-foreground">Path: </span>
+                <span className="text-foreground break-all" title={font.path}>
+                  {formatPath(font.path)}
+                </span>
+              </div>
+              <button
+                onClick={() => openInExplorer(font.path)}
+                className="flex-shrink-0 p-1 rounded hover:bg-muted transition-colors"
+                title="Open in Explorer"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </button>
             </div>
             <div>
               <span className="text-muted-foreground">Format: </span>

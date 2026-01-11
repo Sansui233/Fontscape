@@ -243,6 +243,14 @@ export function ListView() {
             step="1"
             value={detailPreviewFontSize}
             onChange={(e) => setDetailPreviewFontSize(Number(e.target.value))}
+            onInput={(e) => {
+              const target = e.target as HTMLInputElement;
+              const percent = ((Number(target.value) - 12) / (48 - 12)) * 100;
+              target.style.setProperty('--slider-progress', `${percent}%`);
+            }}
+            style={{
+              '--slider-progress': `${((detailPreviewFontSize - 12) / (48 - 12)) * 100}%`
+            } as React.CSSProperties}
             className="minimal-slider w-24"
           />
           <input
@@ -265,6 +273,14 @@ export function ListView() {
             step="100"
             value={detailPreviewFontWeight}
             onChange={(e) => setDetailPreviewFontWeight(Number(e.target.value))}
+            onInput={(e) => {
+              const target = e.target as HTMLInputElement;
+              const percent = ((Number(target.value) - 100) / (900 - 100)) * 100;
+              target.style.setProperty('--slider-progress', `${percent}%`);
+            }}
+            style={{
+              '--slider-progress': `${((detailPreviewFontWeight - 100) / (900 - 100)) * 100}%`
+            } as React.CSSProperties}
             className="minimal-slider w-24"
           />
           <input

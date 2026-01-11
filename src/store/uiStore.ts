@@ -12,6 +12,7 @@ interface UIStore {
   detailPreviewFontSize: number;
   detailPreviewFontWeight: number;
   detailPreviewItalic: boolean;
+  rightSidebarWidth: number;
   setViewMode: (mode: ViewMode) => void;
   setPreviewSize: (size: number) => void;
   setPreviewText: (text: string) => void;
@@ -23,6 +24,7 @@ interface UIStore {
   setDetailPreviewFontSize: (size: number) => void;
   setDetailPreviewFontWeight: (weight: number) => void;
   setDetailPreviewItalic: (italic: boolean) => void;
+  setRightSidebarWidth: (width: number) => void;
   language: string;
   setLanguage: (lang: string) => void;
   filters: {
@@ -47,6 +49,7 @@ export const useUIStore = create<UIStore>((set) => ({
   detailPreviewFontSize: 24,
   detailPreviewFontWeight: 400,
   detailPreviewItalic: false,
+  rightSidebarWidth: 320,
   setViewMode: (mode) => set({ viewMode: mode }),
   setPreviewSize: (size) => set({ previewSize: size }),
   setPreviewText: (text) => set({ previewText: text }),
@@ -73,6 +76,7 @@ export const useUIStore = create<UIStore>((set) => ({
   setDetailPreviewFontWeight: (weight) =>
     set({ detailPreviewFontWeight: weight }),
   setDetailPreviewItalic: (italic) => set({ detailPreviewItalic: italic }),
+  setRightSidebarWidth: (width) => set({ rightSidebarWidth: width }),
   language: "zh-CN",
   setLanguage: (lang) => set({ language: lang }),
   filters: { languages: [], tags: [], searchText: "" },

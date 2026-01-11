@@ -47,3 +47,12 @@ export async function checkGlyphsInFont(
     throw error;
   }
 }
+
+export async function openInExplorer(path: string): Promise<void> {
+  try {
+    await invoke("open_in_explorer", { path });
+  } catch (error) {
+    console.error("Failed to open in explorer:", error);
+    throw error;
+  }
+}

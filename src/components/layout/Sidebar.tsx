@@ -64,14 +64,14 @@ export function Sidebar({ collapsed }: SidebarProps) {
 
   return (
     <div
-      className="relative"
+      className="relative border-r border-border"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* Hover trigger when collapsed */}
       {collapsed && (
         <div
-          className="absolute top-2 bottom-2 w-8 z-40 transition-all duration-300"
+          className="absolute top-2 bottom-2 w-8 z-3 transition-all duration-300"
           style={{
             left: isHovered ? "calc(256px)" : "0",
           }}
@@ -81,13 +81,13 @@ export function Sidebar({ collapsed }: SidebarProps) {
       {/* Collapse toggle */}
       <button
         onClick={toggleSidebar}
-        className="absolute top-8 z-[60] h-6 w-6 rounded-full border border-border bg-background shadow-sm flex items-center justify-center hover:bg-muted transition-all duration-300"
+        className="absolute top-8 z-19 h-6 w-6 rounded-full border border-border bg-background shadow-sm flex items-center justify-center hover:bg-muted transition-all duration-300"
         style={{
           left: collapsed
             ? isHovered
-              ? "calc(256px - 12px)"
+              ? "calc(192px - 12px)"
               : "-12px"
-            : "calc(256px - 12px)",
+            : "calc(192px - 12px)",
         }}
       >
         {collapsed ? (
@@ -100,17 +100,17 @@ export function Sidebar({ collapsed }: SidebarProps) {
       {/* Sidebar */}
       <aside
         style={{ height: collapsed ? "calc(100% - 1rem)" : "auto" }}
-        className={`border-r border-border bg-background transition-all duration-300 overflow-hidden ${
+        className={`bg-background transition-all duration-300 overflow-hidden ${
           collapsed
-            ? `absolute left-0 top-2 bottom-0 z-50 rounded-2xl shadow-lg ${
-                isHovered ? "w-64" : "w-0"
+            ? `border-r border-border absolute left-0 top-2 bottom-0 z-4 rounded-2xl shadow-lg ${
+                isHovered ? "w-48" : "w-0"
               }`
-            : "relative z-4 w-64"
+            : "relative z-4 w-48"
         }`}
       >
         {/* Inner content with opacity transition */}
         <div
-          className={`w-64 h-full transition-opacity duration-300 ${
+          className={`w-48 h-full transition-opacity duration-300 ${
             collapsed
               ? isHovered
                 ? "opacity-100"

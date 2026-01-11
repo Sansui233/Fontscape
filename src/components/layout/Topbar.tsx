@@ -1,15 +1,34 @@
 import { debounceWithCallbackRef } from "@/lib/utils";
 import { useUIStore } from "@/store/uiStore";
-import { Grid3x3, List, Search, Settings, Type } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Grid3x3,
+  List,
+  Search,
+  Settings,
+  Type,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 
 export function Topbar() {
   const { viewMode, setViewMode, previewText, setPreviewText } = useUIStore();
   const store = useUIStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const appName = 'Fontscape';
+  const appName = "Fontscape";
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
+
+  // Track navigation state
+  useEffect(() => {
+    // Check if we can go back/forward
+    setCanGoBack(window.history.state?.idx > 0);
+    // Forward detection is tricky, we'll assume false for now
+    // React Router doesn't expose forward history easily
+    setCanGoForward(false);
+  }, [location]);
 
   const debouncedSetSearch = useRef(
     debounceWithCallbackRef((text: string) => {
@@ -60,7 +79,7 @@ export function Topbar() {
 
   const handleSearchKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
+      if (e.key === "Enter") {
         // Execute search immediately on Enter
         const searchText = e.currentTarget.value;
         store.setFilters({
@@ -75,7 +94,7 @@ export function Topbar() {
 
   const handlePreviewKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
+      if (e.key === "Enter") {
         // Update preview immediately on Enter
         const text = e.currentTarget.value;
         setPreviewText(text);
@@ -96,6 +115,34 @@ export function Topbar() {
 
       {/* Search and Preview inputs */}
       <div className="flex-1 flex items-center gap-4 max-w-3xl">
+        {/* Navigation arrows */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => canGoBack && navigate(-1)}
+            disabled={!canGoBack}
+            className={`p-2 rounded-lg transition-colors ${
+              canGoBack
+                ? "hover:bg-muted cursor-pointer"
+                : "text-muted-foreground-2 cursor-not-allowed"
+            }`}
+            title="Go back"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => canGoForward && navigate(1)}
+            disabled={!canGoForward}
+            className={`p-2 rounded-lg transition-colors ${
+              canGoForward
+                ? "hover:bg-muted cursor-pointer"
+                : "text-muted-foreground-2 cursor-not-allowed"
+            }`}
+            title="Go forward"
+          >
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+
         {/* Search bar */}
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -128,26 +175,28 @@ export function Topbar() {
         <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
           <button
             onClick={() => {
-              setViewMode('grid');
-              if (location.pathname !== '/') navigate('/');
+              setViewMode("grid");
+              if (location.pathname !== "/") navigate("/");
             }}
-            className={`p-2 rounded transition-colors ${viewMode === 'grid'
-              ? 'bg-background shadow-sm'
-              : 'hover:bg-background/50'
-              }`}
+            className={`p-2 rounded transition-colors ${
+              viewMode === "grid"
+                ? "bg-background shadow-sm"
+                : "hover:bg-background/50"
+            }`}
             title="Grid view"
           >
             <Grid3x3 className="h-4 w-4" />
           </button>
           <button
             onClick={() => {
-              setViewMode('list');
-              if (location.pathname !== '/list') navigate('/list');
+              setViewMode("list");
+              if (location.pathname !== "/list") navigate("/list");
             }}
-            className={`p-2 rounded transition-colors ${viewMode === 'list'
-              ? 'bg-background shadow-sm'
-              : 'hover:bg-background/50'
-              }`}
+            className={`p-2 rounded transition-colors ${
+              viewMode === "list"
+                ? "bg-background shadow-sm"
+                : "hover:bg-background/50"
+            }`}
             title="List view"
           >
             <List className="h-4 w-4" />

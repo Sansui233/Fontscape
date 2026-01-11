@@ -11,7 +11,9 @@ fn main() {
             scan_fonts,
             refresh_fonts,
             toggle_font,
-            check_glyphs_in_font
+            check_glyphs_in_font,
+            #[cfg(target_os = "windows")]
+            open_in_explorer
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

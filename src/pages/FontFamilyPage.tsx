@@ -132,13 +132,17 @@ export function FontFamilyPage() {
 
   // 右侧栏显示的字体
   const displayFont = selectedFont || defaultFont;
+  const { rightSidebarWidth } = useUIStore();
 
   return (
     <>
       {/* 覆盖层 - 覆盖在 main 区域 */}
       <div className="absolute inset-0 flex bg-background overflow-hidden">
         {/* 主内容区 - 为右侧栏留出空间 */}
-        <div className="flex-1 overflow-auto p-8 mr-[280px]">
+        <div
+          className="flex-1 overflow-auto p-8"
+          style={{ marginRight: `${rightSidebarWidth}px` }}
+        >
           <div className="max-w-4xl mx-auto">
             {/* 头部 */}
             <div className="flex items-center justify-between mb-8">
@@ -162,10 +166,10 @@ export function FontFamilyPage() {
                 <h3 className="text-sm font-medium text-muted-foreground">
                   Preview
                 </h3>
-                <div className="flex items-center gap-6 mr-2">
+                <div className="flex items-center gap-4 min-w-0 flex-shrink">
                   {/* 字体大小滑块 */}
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
                       Size:
                     </label>
                     <input
@@ -177,6 +181,14 @@ export function FontFamilyPage() {
                       onChange={(e) =>
                         setDetailPreviewFontSize(Number(e.target.value))
                       }
+                      onInput={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        const percent = ((Number(target.value) - 8) / (48 - 8)) * 100;
+                        target.style.setProperty('--slider-progress', `${percent}%`);
+                      }}
+                      style={{
+                        '--slider-progress': `${((detailPreviewFontSize - 8) / (48 - 8)) * 100}%`
+                      } as React.CSSProperties}
                       className="minimal-slider w-24"
                     />
                     <input
@@ -191,8 +203,8 @@ export function FontFamilyPage() {
                     />
                   </div>
                   {/* 字重滑块 */}
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
                       Weight:
                     </label>
                     <input
@@ -204,6 +216,14 @@ export function FontFamilyPage() {
                       onChange={(e) =>
                         setDetailPreviewFontWeight(Number(e.target.value))
                       }
+                      onInput={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        const percent = ((Number(target.value) - 100) / (900 - 100)) * 100;
+                        target.style.setProperty('--slider-progress', `${percent}%`);
+                      }}
+                      style={{
+                        '--slider-progress': `${((detailPreviewFontWeight - 100) / (900 - 100)) * 100}%`
+                      } as React.CSSProperties}
                       className="minimal-slider w-24"
                     />
                     <input
@@ -232,7 +252,7 @@ export function FontFamilyPage() {
                   </button>
                 </div>
               </div>
-              <div className="space-y-6">
+              <div className="space-y-3">
                 {getPreviewTexts(previewFont).map((text, idx) => (
                   <div
                     key={idx}
@@ -281,6 +301,7 @@ export function FontFamilyPage() {
                         style={{
                           fontFamily: `"${font.css_font_family}", sans-serif`,
                           fontWeight: font.weight,
+                          fontStyle: font.style.toLowerCase().includes('italic') ? 'italic' : 'normal',
                         }}
                       >
                         {getDisplayName(font)}

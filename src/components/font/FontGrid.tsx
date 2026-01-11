@@ -203,10 +203,10 @@ export function FontGrid({ fontState }: FontGridProps) {
                   left: 0,
                   width: "100%",
                   transform: `translateY(${virtualRow.start}px)`,
-                  paddingBottom: "24px",
+                  paddingTop: "1.5rem",
                 }}
               >
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 px-6">
                   {rowFontFamilies.map((fm) => (
                     <FontCard key={fm.name} fontFamily={fm} />
                   ))}

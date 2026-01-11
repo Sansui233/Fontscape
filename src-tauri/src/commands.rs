@@ -23,3 +23,17 @@ pub async fn toggle_font(font_id: String, enable: bool) -> Result<(), String> {
 pub async fn check_glyphs_in_font(font_path: String, text: String) -> Result<Vec<GlyphCheckResult>, String> {
     check_glyphs(font_path, text)
 }
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+pub async fn open_in_explorer(path: String) -> Result<(), String> {
+    use std::process::Command;
+
+    // Use explorer.exe with /select flag to open and select the file
+    Command::new("explorer")
+        .args(["/select,", &path])
+        .spawn()
+        .map_err(|e| format!("Failed to open explorer: {}", e))?;
+
+    Ok(())
+}

@@ -26,7 +26,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="h-full flex flex-col p-6">
+    <div className="h-full flex flex-col">
       <div className="flex-1 min-h-0">
         <FontGrid fontState={fontState} />
       </div>
