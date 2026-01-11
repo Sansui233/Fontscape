@@ -16,7 +16,6 @@ export function Sidebar({ collapsed }: SidebarProps) {
   const { getFontById } = useFontStore();
   const [isHovered, setIsHovered] = useState(false);
   const leaveTimeoutRef = useRef<number | null>(null);
-  const asideRef = useRef<HTMLElement>(null);
 
   const handleMouseEnter = () => {
     if (leaveTimeoutRef.current) {
@@ -26,15 +25,11 @@ export function Sidebar({ collapsed }: SidebarProps) {
     if (collapsed) setIsHovered(true);
   };
 
-  const handleTriggerLeave = (e: React.MouseEvent) => {
-    // If moving to aside, don't collapse
-    if (asideRef.current?.contains(e.relatedTarget as Node)) {
-      return;
-    }
-    // Otherwise start delayed collapse
+  const handleMouseLeave = () => {
+    if (!collapsed) return;
     leaveTimeoutRef.current = window.setTimeout(() => {
       setIsHovered(false);
-    }, 500);
+    }, 200);
   };
 
   const countByLanguage = useCallback(
@@ -68,41 +63,62 @@ export function Sidebar({ collapsed }: SidebarProps) {
   }, [fontState]);
 
   return (
-    <>
+    <div
+      className="relative"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {/* Hover trigger when collapsed */}
+      {collapsed && (
+        <div
+          className="absolute top-2 bottom-2 w-8 z-40 transition-all duration-300"
+          style={{
+            left: isHovered ? "calc(256px)" : "0",
+          }}
+        />
+      )}
+
+      {/* Collapse toggle */}
+      <button
+        onClick={toggleSidebar}
+        className="absolute top-8 z-[60] h-6 w-6 rounded-full border border-border bg-background shadow-sm flex items-center justify-center hover:bg-muted transition-all duration-300"
+        style={{
+          left: collapsed
+            ? isHovered
+              ? "calc(256px - 12px)"
+              : "-12px"
+            : "calc(256px - 12px)",
+        }}
+      >
+        {collapsed ? (
+          <ChevronRight className="h-3 w-3" />
+        ) : (
+          <ChevronLeft className="h-3 w-3" />
+        )}
+      </button>
+
       {/* Sidebar */}
       <aside
-        ref={asideRef}
-        onMouseEnter={handleMouseEnter}
-        className={`border-r border-border bg-background transition-all duration-300 w-64 ${
+        style={{ height: collapsed ? "calc(100% - 1rem)" : "auto" }}
+        className={`border-r border-border bg-background transition-all duration-300 overflow-hidden ${
           collapsed
-            ? `absolute left-0 top-0 bottom-0 z-50 ${
-                isHovered ? "translate-x-0 shadow-lg" : "-translate-x-full"
+            ? `absolute left-0 top-2 bottom-0 z-50 rounded-2xl shadow-lg ${
+                isHovered ? "w-64" : "w-0"
               }`
-            : "relative z-4 translate-x-0"
+            : "relative z-4 w-64"
         }`}
       >
-        {/* Hover trigger when collapsed - positioned at right edge */}
-        {collapsed && (
-          <div
-            className="absolute -right-8 top-0 bottom-0 w-8 z-40"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleTriggerLeave}
-          />
-        )}
-        {/* Collapse toggle */}
-        <button
-          onClick={toggleSidebar}
-          className="absolute -right-3 top-6 z-10 h-6 w-6 rounded-full border border-border bg-background shadow-sm flex items-center justify-center hover:bg-muted transition-colors"
+        {/* Inner content with opacity transition */}
+        <div
+          className={`w-64 h-full transition-opacity duration-300 ${
+            collapsed
+              ? isHovered
+                ? "opacity-100"
+                : "opacity-0 pointer-events-none"
+              : "opacity-100"
+          }`}
         >
-          {collapsed ? (
-            <ChevronRight className="h-3 w-3" />
-          ) : (
-            <ChevronLeft className="h-3 w-3" />
-          )}
-        </button>
-
-        {/* Sidebar content */}
-        {(!collapsed || isHovered) && (
+          {/* Sidebar content - always rendered for smooth transition */}
           <div className="p-4 overflow-y-auto h-full">
             <nav className="space-y-6">
               {/* Categories */}
@@ -197,9 +213,9 @@ export function Sidebar({ collapsed }: SidebarProps) {
               </div>
             </nav>
           </div>
-        )}
+        </div>
       </aside>
-    </>
+    </div>
   );
 }
 
