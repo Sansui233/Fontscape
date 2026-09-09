@@ -1,4 +1,5 @@
 import { useEffect, useRef, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface ContextMenuItem {
   label: string;
@@ -45,11 +46,11 @@ export function ContextMenu({ x, y, onClose, items }: ContextMenuProps) {
   // 调整菜单位置，确保不超出视口
   const menuHeight = items.length * 40 + 20;
   const adjustedPosition = {
-    x: Math.min(x, window.innerWidth - 200),
-    y: Math.min(y, window.innerHeight - menuHeight),
+    x: Math.max(0, Math.min(x, window.innerWidth - 200)),
+    y: Math.max(0, Math.min(y, window.innerHeight - menuHeight)),
   };
 
-  return (
+  return createPortal(
     <div
       ref={menuRef}
       className="fixed z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[160px]"
@@ -79,6 +80,7 @@ export function ContextMenu({ x, y, onClose, items }: ContextMenuProps) {
           <span>{item.label}</span>
         </button>
       ))}
-    </div>
+    </div>,
+    document.body
   );
 }
