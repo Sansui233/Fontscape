@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { useDebouncedCallback } from "use-debounce";
 import { FontCard } from "./FontCard";
+import { FontToolbar } from "./FontToolbar";
 
 interface FontGridProps {
   fontState: FontState;
@@ -174,8 +175,9 @@ export function FontGrid({ fontState }: FontGridProps) {
   }
 
   return (
-    <>
-      <div ref={parentRef} className="h-full overflow-auto">
+    <div className="flex flex-col h-full">
+      <FontToolbar />
+      <div ref={parentRef} className="flex-1 min-h-0 overflow-auto">
         <div
           style={{
             height: `${rowVirtualizer.getTotalSize()}px`,
@@ -216,6 +218,6 @@ export function FontGrid({ fontState }: FontGridProps) {
           })}
         </div>
       </div>
-    </>
+    </div>
   );
 }

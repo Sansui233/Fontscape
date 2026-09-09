@@ -1,4 +1,5 @@
 import { checkGlyphsInFont } from "@/lib/tauri-api";
+import { FontToolbar } from "@/components/font/FontToolbar";
 import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
 import { FontInfo, FontState } from "@/types/font";
@@ -231,7 +232,7 @@ export function ListView() {
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-end gap-6 px-6 py-1 border-b border-border bg-background">
+      <FontToolbar>
         <div className="flex items-center gap-2">
           <label className="text-xs text-muted-foreground whitespace-nowrap">
             Size:
@@ -304,7 +305,7 @@ export function ListView() {
         >
           <Italic className="w-4 h-4" />
         </button>
-      </div>
+      </FontToolbar>
 
       {/* List */}
       <div ref={parentRef} className="flex-1 overflow-auto">
