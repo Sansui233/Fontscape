@@ -6,7 +6,7 @@ export interface FontInfo {
   postscript_name: string;
   style: string;
   path: string;
-  fileSize: number;
+  file_size: number;
   format: FontFormat;
   is_variable: boolean;
   weight: number;              // 字重值 (100-900)，由 OS/2 usWeightClass 或 fvar wght 轴获取

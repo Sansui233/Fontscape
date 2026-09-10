@@ -48,7 +48,7 @@ export function FontInfoModal({ font, onClose }: FontInfoModalProps) {
               {displayName}
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {font.style} • {font.format} • {formatFileSize(font.fileSize)}
+              {font.style} • {font.format} • {formatFileSize(font.file_size)}
             </p>
           </div>
           <button
@@ -88,7 +88,7 @@ export function FontInfoModal({ font, onClose }: FontInfoModalProps) {
               <InfoRow label="Weight" value={formatFontWeight(font.weight)} />
               <InfoRow label="File Path" value={font.path} />
               <InfoRow label="Format" value={font.format} />
-              <InfoRow label="File Size" value={formatFileSize(font.fileSize)} />
+              <InfoRow label="File Size" value={formatFileSize(font.file_size)} />
               <InfoRow label="Status" value={font.status} />
               <InfoRow label="Variable Font" value={font.is_variable ? "Yes" : "No"} />
               <InfoRow label="Languages" value={font.languages.join(", ")} />

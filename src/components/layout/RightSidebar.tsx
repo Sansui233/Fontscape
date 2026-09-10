@@ -128,7 +128,7 @@ export function RightSidebar({ font }: RightSidebarProps) {
             <div>
               <span className="text-muted-foreground">Size: </span>
               <span className="text-foreground">
-                {formatFileSize(font.fileSize)}
+                {formatFileSize(font.file_size)}
               </span>
             </div>
             <div>
