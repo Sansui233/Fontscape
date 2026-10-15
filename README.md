@@ -6,6 +6,16 @@ Modern font browsing / management tool for Windows built with Tauri and React.
 
 > This project is still under development, but browsing and filtering already work well enough for daily use, so I put it here.
 
+## Screenshots
+
+![Main View](./docs/media/main.png)
+
+## Download
+
+Download the latest Windows installer from [GitHub Releases](https://github.com/Sansui233/Fontscape/releases/latest).
+
+Requires Windows 10/11.
+
 ## Why do this?
 
 - It can accurately filter fonts by language, and basically supports the languages ​​of the three East Asian countries that are planned to be improved.
@@ -36,13 +46,13 @@ In addition, the font metadata on the internet is rather messy; for example, the
 - [ ] Download from open source
 - [ ] Export font samples
 
-## Screenshots
+---
 
-![Main View](./docs/media/main.png)
+## Development
 
-## Tech Stack
+### Tech Stack
 
-### Frontend
+#### Frontend
 - React 19 + TypeScript
 - Tailwind CSS 4
 - Zustand (state management)
@@ -50,26 +60,26 @@ In addition, the font metadata on the internet is rather messy; for example, the
 - React Router 7
 - Vite
 
-### Backend
+#### Backend
 - Tauri 2
 - Rust
 - ttf-parser (font parsing)
 - rusqlite (local storage)
 - Windows API bindings
 
-## Getting Started
+### Getting Started
 
-### Prerequisites
+#### Prerequisites
 - Node.js 18+ and pnpm
 - Rust 1.70+
 - Windows 10/11
 
-### Installation
+#### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Sansui233/fontscape.git
-cd fontscape
+git clone https://github.com/Sansui233/Fontscape.git
+cd Fontscape
 ```
 
 2. Install dependencies:
@@ -87,7 +97,7 @@ pnpm tauri:dev
 pnpm tauri:build
 ```
 
-## Project Structure
+### Project Structure
 
 ```
 fontscape/
@@ -108,7 +118,7 @@ fontscape/
 └── docs/                   # Design notes and feature status
 ```
 
-## Development Roadmap
+### Development Roadmap
 
 - [x] Phase 1: Basic framework setup
 - [x] Phase 2: Font scanning and parsing
@@ -120,7 +130,7 @@ fontscape/
 - [ ] Phase 8: Performance optimization
 - [ ] Phase 9: Polish and release
 
-## Contributing
+### Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 

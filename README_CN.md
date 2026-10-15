@@ -6,6 +6,16 @@
 
 > 此项目还有一堆东西没有开发完，但是对于日常最需要筛选字体够了所以发上来试试
 
+## 截图
+
+![Main View](./docs/media/main.png)
+
+## 下载
+
+从 [GitHub Releases](https://github.com/Sansui233/Fontscape/releases/latest) 下载最新的 Windows 安装包。
+
+需要 Windows 10/11。
+
 ## 为什么做这个
 
 - 能准确按语言筛选字体，基本支持打算完善东亚三国语言。
@@ -36,13 +46,13 @@ Windows 自带的字体软件对于语言的分类筛选几乎等于不可用。
 - [ ] 使用开放源下载
 - [ ] 导出字体样张
 
-## 截图
+---
 
-![Main View](./docs/media/main.png)
+## 开发
 
-## 技术栈
+### 技术栈
 
-### 前端
+#### 前端
 - React 19 + TypeScript
 - Tailwind CSS 4
 - Zustand（状态管理）
@@ -50,26 +60,26 @@ Windows 自带的字体软件对于语言的分类筛选几乎等于不可用。
 - React Router 7
 - Vite
 
-### 后端
+#### 后端
 - Tauri 2
 - Rust
 - ttf-parser（字体解析）
 - rusqlite（本地存储）
 - Windows API 绑定
 
-## 快速开始
+### 快速开始
 
-### 环境要求
+#### 环境要求
 - Node.js 18+ 和 pnpm
 - Rust 1.70+
 - Windows 10/11
 
-### 安装步骤
+#### 安装步骤
 
 1. 克隆仓库：
 ```bash
-git clone https://github.com/Sansui233/fontscape.git
-cd fontscape
+git clone https://github.com/Sansui233/Fontscape.git
+cd Fontscape
 ```
 
 2. 安装依赖：
@@ -87,7 +97,7 @@ pnpm tauri:dev
 pnpm tauri:build
 ```
 
-## 项目结构
+### 项目结构
 
 ```
 fontscape/
@@ -108,7 +118,7 @@ fontscape/
 └── docs/                   # 设计说明和功能完成度
 ```
 
-## 开发路线图
+### 开发路线图
 
 - [x] 阶段 1：基础框架搭建
 - [x] 阶段 2：字体扫描和解析
@@ -120,12 +130,12 @@ fontscape/
 - [ ] 阶段 8：性能优化
 - [ ] 阶段 9：打磨和发布
 
-## Todo
+### Todo
 
 - [ ] AI Tagging
 - [ ] 滚动更新
 
-## 贡献
+### 贡献
 
 欢迎贡献代码！请随时提交 Pull Request。
 
