@@ -1,7 +1,7 @@
 use super::{PersistenceError, PersistenceResult};
 use rusqlite::{params, Connection};
 
-pub const LATEST_SCHEMA_VERSION: i64 = 2;
+pub const LATEST_SCHEMA_VERSION: i64 = 4;
 
 pub fn migrate(connection: &mut Connection) -> PersistenceResult<()> {
     connection.execute_batch(
@@ -29,6 +29,12 @@ pub fn migrate(connection: &mut Connection) -> PersistenceResult<()> {
     }
     if current_version < 2 {
         apply_v2(connection)?;
+    }
+    if current_version < 3 {
+        apply_v3(connection)?;
+    }
+    if current_version < 4 {
+        apply_v4(connection)?;
     }
 
     Ok(())
@@ -130,6 +136,46 @@ fn apply_v2(connection: &mut Connection) -> PersistenceResult<()> {
     transaction.execute(
         "INSERT INTO schema_migrations (version, applied_at) VALUES (2, unixepoch())",
         [],
+    )?;
+    transaction.commit()?;
+    Ok(())
+}
+
+/// v3：「已存筛选」支持文件夹（可嵌套），筛选可归属到文件夹
+fn apply_v3(connection: &mut Connection) -> PersistenceResult<()> {
+    let transaction = connection.transaction()?;
+    transaction.execute_batch(
+        "CREATE TABLE filter_folders (
+            id         TEXT PRIMARY KEY,
+            name       TEXT NOT NULL,
+            parent_id  TEXT REFERENCES filter_folders(id),
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        );
+        ALTER TABLE saved_filters ADD COLUMN folder_id TEXT REFERENCES filter_folders(id);
+        INSERT INTO schema_migrations (version, applied_at) VALUES (3, unixepoch());",
+    )?;
+    transaction.commit()?;
+    Ok(())
+}
+
+/// v4：用户标签，打在字体家族上
+fn apply_v4(connection: &mut Connection) -> PersistenceResult<()> {
+    let transaction = connection.transaction()?;
+    transaction.execute_batch(
+        "CREATE TABLE tags (
+            id         TEXT PRIMARY KEY,
+            name       TEXT NOT NULL,
+            name_key   TEXT NOT NULL UNIQUE,
+            created_at INTEGER NOT NULL
+        );
+        CREATE TABLE font_tags (
+            family TEXT NOT NULL,
+            tag_id TEXT NOT NULL REFERENCES tags(id),
+            PRIMARY KEY (family, tag_id)
+        );
+        INSERT INTO schema_migrations (version, applied_at) VALUES (4, unixepoch());",
     )?;
     transaction.commit()?;
     Ok(())

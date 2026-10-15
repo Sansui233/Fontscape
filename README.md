@@ -4,7 +4,7 @@
 
 Modern font browsing / management tool for Windows built with Tauri and React.
 
-> This project is still under development. Only basic filter features are achieved but it's useful for me so I put it here
+> This project is still under development, but browsing and filtering already work well enough for daily use, so I put it here.
 
 ## Why do this?
 
@@ -15,42 +15,52 @@ Windows' built-in font software is practically useless for language filtering. A
 
 In addition, the font metadata on the internet is rather messy; for example, the CSS font-family of some Simplified Chinese fonts is Traditional Chinese name, etc. Therefore, we use the parsing priority of the browser to obtain the available CSS font-family name.
 
+## Features
+
+- **Browse**: grid and list views with virtual scrolling, live preview text and size, missing glyphs shown as □
+- **Filter**: by language, category (serif / sans / mono / handwriting / decorative), name and tag
+- **Saved filters**: save conditions as named filters, organize them in nested folders, drag to reorder
+- **Tags**: tag font families from the card / list context menu, multi-select mode or the detail page
+- **Detail page**: all styles of a family, multi-script previews, name table metadata
+- **Localized names**: shows Chinese / Japanese / Korean font names following the interface language
+- **Interface**: English, 简体中文, 日本語, 한국어; light / dark / system appearance
+- **Persistence**: filters, tags, settings and the last UI state are stored in a local SQLite database
+
 ## TODO
 
-- [ ] Fast startup
-- [ ] Font preview with customizable size and text
-- [ ] Smart search with pinyin support for Chinese fonts
-- [ ] Font categorization and filtering by language and type
-- [ ] Grid and Paper view modes
-- [ ] Right-click context menu for quick actions
-- [ ] Multi-select mode for batch operations
+- [ ] Fast startup (incremental font cache)
+- [ ] Pinyin search for Chinese fonts
+- [ ] Paper view
+- [ ] Batch operations in multi-select mode
+- [ ] Install / Uninstall / Toggle fonts
 - [ ] Download from open source
-- [ ] Install/Unstall/Toggle font
+- [ ] Export font samples
 
 ## Screenshots
 
-![Main View](./docs/media/main.jpg)
-![Modal View](./docs/media/font-modal.jpg)
+![Main View](./docs/media/main.png)
 
 ## Tech Stack
 
 ### Frontend
-- React 18 + TypeScript
-- TailwindCSS + shadcn/ui
+- React 19 + TypeScript
+- Tailwind CSS 4
 - Zustand (state management)
 - TanStack Virtual (virtualization)
+- React Router 7
 - Vite
 
 ### Backend
-- Tauri 2.x
+- Tauri 2
 - Rust
-- Windows API bindings
 - ttf-parser (font parsing)
+- rusqlite (local storage)
+- Windows API bindings
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 18+ and pnpm
 - Rust 1.70+
 - Windows 10/11
 
@@ -64,17 +74,17 @@ cd fontscape
 
 2. Install dependencies:
 ```bash
-npm install
+pnpm install
 ```
 
 3. Run in development mode:
 ```bash
-npm run tauri:dev
+pnpm tauri:dev
 ```
 
 4. Build for production:
 ```bash
-npm run tauri:build
+pnpm tauri:build
 ```
 
 ## Project Structure
@@ -82,15 +92,20 @@ npm run tauri:build
 ```
 fontscape/
 ├── src/                    # React frontend
-│   ├── components/         # UI components
-│   ├── hooks/              # Custom React hooks
+│   ├── components/         # UI components (layout, font, filter, tags, settings)
+│   ├── pages/              # Grid, list and family detail pages
 │   ├── store/              # Zustand stores
-│   └── lib/                # Utilities and API
+│   ├── i18n/               # Interface translations
+│   └── lib/                # Utilities and Tauri API wrappers
 ├── src-tauri/              # Rust backend
 │   └── src/
-│       ├── font/           # Font scanning and parsing
-│       └── lib.rs          # Tauri commands
-└── claude.md               # Technical architecture docs
+│       ├── font/           # Font scanning, parsing and classification
+│       ├── filters/        # Saved filters and folders
+│       ├── tags/           # Font family tags
+│       ├── settings/       # UI state and preferences
+│       ├── persistence/    # SQLite database and migrations
+│       └── commands.rs     # Tauri commands
+└── docs/                   # Design notes and feature status
 ```
 
 ## Development Roadmap
@@ -100,8 +115,8 @@ fontscape/
 - [x] Phase 3: Font preview
 - [x] Phase 4: Search functionality
 - [ ] Phase 5: Font management (enable/disable)
-- [ ] Phase 6: Categorization and filtering
-- [ ] Phase 7: Font detail page
+- [x] Phase 6: Categorization and filtering
+- [x] Phase 7: Font detail page
 - [ ] Phase 8: Performance optimization
 - [ ] Phase 9: Polish and release
 

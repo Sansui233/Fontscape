@@ -1,94 +1,101 @@
+import { TagPicker } from "@/components/tags/TagPicker";
 import { ContextMenu } from "@/components/ui/ContextMenu";
+import { errorText, useI18n, valueLabel } from "@/i18n";
+import { languageCode } from "@/lib/filter-labels";
+import { useFontNames } from "@/lib/font-names";
 import { getFontWeightName } from "@/lib/font";
 import { checkGlyphsInFont, toggleFont } from "@/lib/tauri-api";
+import { cn } from "@/lib/utils";
 import { useFontStore } from "@/store/fontStore";
+import { showToast } from "@/store/toastStore";
 import { useUIStore } from "@/store/uiStore";
-import { CssFontFamily, FontInfo } from "@/types/font";
-import { Ban, Check, CheckSquare, Info } from "lucide-react";
-import { useEffect, useState } from "react";
+import type { CommandError } from "@/types/application";
+import { CssFontFamily, FontFormat, FontInfo } from "@/types/font";
+import { Ban, Check, CheckSquare, Info, Tag as TagIcon } from "lucide-react";
+import { memo, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+
+const FORMAT_LABELS: Record<FontFormat, string> = {
+  TrueType: "TTF",
+  OpenType: "OTF",
+  TrueTypeCollection: "TTC",
+  Woff: "WOFF",
+  Woff2: "WOFF2",
+};
+
+/** 预览区高度与字号联动，FontGrid 用同一公式估算行高 */
+export const previewAreaHeight = (previewSize: number) => Math.round(previewSize * 1.4) + 20;
+export const CARD_INFO_HEIGHT = 52;
 
 interface FontCardProps {
   fontFamily: CssFontFamily;
-  onShowInfo?: (font: FontInfo) => void; // 可选，用于右键菜单 Info
+  font: FontInfo;
+  onShowInfo: (font: FontInfo) => void;
 }
 
-export function FontCard({ fontFamily, onShowInfo }: FontCardProps) {
+export const FontCard = memo(function FontCard({ fontFamily, font, onShowInfo }: FontCardProps) {
   const navigate = useNavigate();
-  const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-  const [isToggling, setIsToggling] = useState(false);
-  const [displayText, setdisplayText] = useState("");
-  const { getFontById } = useFontStore();
-  const [font, _] = useState(getFontById(fontFamily.default_font_id));
-
-  if (!font) {
-    return null;
-  }
-
   const updateFontStatus = useFontStore((state) => state.updateFontStatus);
-  const { multiSelectMode, selectedFontIds, toggleFontSelection, previewText } =
-    useUIStore();
+  const previewText = useUIStore((state) => state.previewText);
+  const previewSize = useUIStore((state) => state.previewSize);
+  const { t } = useI18n();
+  const { familyName, fullName } = useFontNames();
+  const multiSelectMode = useUIStore((state) => state.multiSelectMode);
+  const isSelected = useUIStore((state) => state.selectedFontIds.has(font.id));
+  const toggleFontSelection = useUIStore((state) => state.toggleFontSelection);
   const setMultiSelectMode = useUIStore((state) => state.setMultiSelectMode);
 
-  // Get display name based on locale
-  const store = useUIStore();
-  const displayName =
-    store.language === "zh-CN" && font.family_zh ? font.family_zh : font.family;
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [isToggling, setIsToggling] = useState(false);
+  const [tagging, setTagging] = useState(false);
+  const displayName = familyName(font);
+  const sourceText = previewText.trim() || displayName;
+  const [displayText, setDisplayText] = useState(sourceText);
 
-  // 检查 font 是否包含预览文本的字形，没有的用方框替代，以避免 css fallback 问题
+  // 字体缺少的字形替换为方框，避免浏览器回退到其他字体造成误解
   useEffect(() => {
-    // Use preview text if available, otherwise use display name
-    const previewDisplayText = previewText.trim() || displayName;
-    checkGlyphsInFont(font.path, previewDisplayText)
+    let cancelled = false;
+    checkGlyphsInFont(font.path, sourceText)
       .then((results) => {
-        const constructedText = results
-          .map((res) => (res.exists ? res.glyph : "□"))
-          .join("");
-        setdisplayText(constructedText);
+        if (!cancelled) {
+          setDisplayText(results.map((res) => (res.exists ? res.glyph : "□")).join(""));
+        }
       })
-      .catch((error) => {
-        console.error("Failed to check glyphs in font:", error);
-        setdisplayText(previewDisplayText); // Fallback to original text on error
+      .catch(() => {
+        if (!cancelled) setDisplayText(sourceText);
       });
-  }, [displayName, previewText, font.path]);
+    return () => {
+      cancelled = true;
+    };
+  }, [sourceText, font.path]);
 
-  // 右键菜单处理
-  function handleContextMenu(e: React.MouseEvent) {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY });
-  }
-
-  // 禁用/启用字体
   async function handleToggleFont() {
-    if (!font) return;
     if (font.status === "SystemFont") return;
-
     setIsToggling(true);
     try {
       const newStatus = font.status === "Enabled" ? "Disabled" : "Enabled";
       await toggleFont(font.id, newStatus === "Enabled");
       updateFontStatus(font.id, newStatus);
     } catch (error) {
-      console.error("Failed to toggle font:", error);
+      showToast(errorText(t, error as CommandError), "error");
     } finally {
       setIsToggling(false);
     }
   }
 
-  // 上下文菜单项
   const menuItems = [
     {
-      label: "Info",
+      label: t("menu.info"),
       icon: <Info className="w-4 h-4" />,
-      onClick: () => {
-        onShowInfo?.(font);
-      },
+      onClick: () => onShowInfo(font),
     },
     {
-      label: "Multi-select",
+      label: t("menu.tags"),
+      icon: <TagIcon className="w-4 h-4" />,
+      onClick: () => setTagging(true),
+    },
+    {
+      label: t("menu.multiSelect"),
       icon: <CheckSquare className="w-4 h-4" />,
       onClick: () => {
         setMultiSelectMode(true);
@@ -96,25 +103,29 @@ export function FontCard({ fontFamily, onShowInfo }: FontCardProps) {
       },
     },
     {
-      label: font.status === "Enabled" ? "Disable" : "Enable",
-      icon:
-        font.status === "Enabled" ? (
-          <Ban className="w-4 h-4" />
-        ) : (
-          <Check className="w-4 h-4" />
-        ),
+      label: font.status === "Disabled" ? t("menu.enable") : t("menu.disable"),
+      icon: font.status === "Disabled" ? <Check className="w-4 h-4" /> : <Ban className="w-4 h-4" />,
       onClick: handleToggleFont,
       disabled: font.status === "SystemFont" || isToggling,
       danger: font.status === "Enabled",
     },
   ];
 
-  const isSelected = selectedFontIds.has(font.id);
+  const styleCount = fontFamily.font_count;
+  const meta = [
+    font.category && font.category !== "Unknown" ? valueLabel(t, "category", font.category) : null,
+    styleCount > 1 ? t("card.styles", styleCount) : getFontWeightName(font.weight),
+    FORMAT_LABELS[font.format],
+  ].filter(Boolean);
+  const languages = font.languages.map(languageCode).filter(Boolean).slice(0, 3);
 
   return (
     <>
       <div
-        onContextMenu={handleContextMenu}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          setContextMenu({ x: event.clientX, y: event.clientY });
+        }}
         onClick={() => {
           if (multiSelectMode) {
             toggleFontSelection(font.id);
@@ -122,107 +133,78 @@ export function FontCard({ fontFamily, onShowInfo }: FontCardProps) {
             navigate(`/family/${encodeURIComponent(fontFamily.name)}`);
           }
         }}
-        className={`
-          group relative overflow-hidden rounded-lg border bg-card p-6
-          transition-all hover:shadow-lg hover:border-primary cursor-pointer
-          ${isSelected ? "ring-2 ring-primary border-primary" : "border-border"}
-        `}
+        className={cn(
+          "group relative rounded-xl border bg-card cursor-pointer overflow-hidden",
+          "transition-[border-color,box-shadow] duration-150",
+          isSelected
+            ? "border-brand ring-1 ring-brand"
+            : "border-border hover:border-foreground/25 hover:shadow-[0_4px_16px_-6px_rgb(0_0_0/0.15)]",
+          font.status === "Disabled" && "opacity-55"
+        )}
       >
-        {/* 翻页书角 - 显示字体数量 */}
-        {fontFamily.font_count > 1 && (
+        {/* 预览 */}
+        <div
+          className="px-4 pt-4 flex items-center overflow-hidden"
+          style={{ height: previewAreaHeight(previewSize) }}
+        >
           <div
-            className="absolute bottom-0 right-0 w-10 h-10 overflow-hidden"
-            title={`This font family contains ${fontFamily.font_count} fonts`}
-          >
-            <div className="absolute bottom-0 right-0 w-0 h-0 border-solid border-b-0 border-r-[40px] border-t-[40px] border-l-0 border-transparent border-r-muted-foreground/20 bg-red" />
-            <div className="absolute bottom-0 right-0 w-0 h-0 border-solid border-b-0  border-r-[39px] border-t-[39px] border-l-0 border-transparent border-r-muted/80"></div>
-            <span className="absolute bottom-1 right-1.5 text-[12px] font-mono font-medium text-muted-foreground">
-              {fontFamily.font_count}
-            </span>
-          </div>
-        )}
-
-        {/* 多选模式：复选框 */}
-        {multiSelectMode && (
-          <div className="absolute top-3 left-3 z-10">
-            <div
-              className={`
-              w-5 h-5 rounded border-2 flex items-center justify-center
-              ${
-                isSelected
-                  ? "bg-primary border-primary"
-                  : "border-muted-foreground"
-              }
-            `}
-            >
-              {isSelected && (
-                <Check className="w-3 h-3 text-primary-foreground" />
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 右下角：状态指示器 */}
-        <div className="absolute text text-xs top-3 right-3 flex items-center gap-2">
-          {/* 状态指示器 */}
-          <div
-            className={`h-2 w-2 rounded-full ${
-              font.status === "Enabled"
-                ? "bg-green-500"
-                : font.status === "Disabled"
-                ? "bg-gray-400"
-                : "bg-blue-500"
-            }`}
-            title={font.status}
-          />
-        </div>
-
-        {/* 字体预览 - 使用 preview text or display name */}
-        <div className="mb-4 overflow-hidden">
-          <div
-            className="transition-all text-2xl leading-normal h-9 overflow-hidden"
+            className="truncate leading-[1.4] text-foreground"
             style={{
               fontFamily: `"${font.css_font_family}", sans-serif`,
               fontWeight: font.weight,
+              fontSize: previewSize,
             }}
           >
             {displayText}
-            {/* 字体族指示器 */}
           </div>
         </div>
 
-        {/* 字体信息 */}
-        <div className="space-y-1">
-          <div className="flex items-center space-x-1">
-            <h3
-              className="font-semibold text-foreground truncate"
-              title={font.full_name}
-            >
-              {displayName}
-            </h3>
-            {font.is_variable && (
-              <span className="px-1.5 py-0.5 text-xs bg-secondary text-secondary-foreground rounded-full ">
-                {"V"}
-              </span>
-            )}
+        {/* 信息：名称 + 一行元数据，语言缩写靠右 */}
+        <div className="px-4 pb-3 flex items-end gap-2" style={{ height: CARD_INFO_HEIGHT }}>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h3 className="truncate text-[13px] font-medium" title={fullName(font)}>
+                {displayName}
+              </h3>
+              {font.is_variable && (
+                <span className="shrink-0 px-1 rounded text-[10px] font-semibold leading-4 bg-muted text-muted-foreground">
+                  VAR
+                </span>
+              )}
+            </div>
+            <p className="truncate text-[11px] text-muted-foreground">{meta.join(" · ")}</p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {getFontWeightName(font.weight)} • {font.format}{" "}
-          </p>
-          <div className="flex flex-wrap gap-1 mt-2">
-            {font.languages.slice(0, 3).map((lang) => (
-              <span
-                key={lang}
-                className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground"
-              >
-                {lang}
-              </span>
+          <div className="shrink-0 flex gap-1.5 text-[10px] font-medium tracking-wide text-muted-foreground/80">
+            {languages.map((code) => (
+              <span key={code}>{code}</span>
             ))}
           </div>
         </div>
+
+        {multiSelectMode ? (
+          <span
+            className={cn(
+              "absolute top-2.5 right-2.5 w-4 h-4 rounded-full border flex items-center justify-center transition-colors",
+              isSelected ? "bg-brand border-brand text-brand-foreground" : "border-muted-foreground/50 bg-background"
+            )}
+          >
+            {isSelected && <Check className="w-3 h-3" strokeWidth={3} />}
+          </span>
+        ) : (
+          <button
+            type="button"
+            title={t("menu.info")}
+            onClick={(event) => {
+              event.stopPropagation();
+              onShowInfo(font);
+            }}
+            className="absolute top-2 right-2 p-1 rounded-md text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted hover:text-foreground"
+          >
+            <Info className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
-      {/* 右键菜单 */}
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
@@ -231,6 +213,7 @@ export function FontCard({ fontFamily, onShowInfo }: FontCardProps) {
           items={menuItems}
         />
       )}
+      {tagging && <TagPicker families={[fontFamily.name]} title={displayName} onClose={() => setTagging(false)} />}
     </>
   );
-}
+});

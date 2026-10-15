@@ -131,6 +131,7 @@ mod tests {
             created_at: 0,
             family_zh: None,
             full_name_zh: None,
+            localized_names: Default::default(),
             css_font_family: css_font_family.to_string(),
         }
     }

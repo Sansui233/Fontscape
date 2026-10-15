@@ -1,11 +1,19 @@
 import { checkGlyphsInFont } from "@/lib/tauri-api";
-import { FontToolbar } from "@/components/font/FontToolbar";
+import { EmptyState } from "@/components/font/FontGrid";
+import { ContentBar } from "@/components/font/ContentBar";
+import { useFilteredFamilies } from "@/hooks/useFilteredFamilies";
+import { useI18n } from "@/i18n";
+import { hasCriteria } from "@/lib/font-filter";
+import { useFontNames } from "@/lib/font-names";
+import { TagPicker } from "@/components/tags/TagPicker";
+import { ContextMenu } from "@/components/ui/ContextMenu";
+import { Tag as TagIcon } from "lucide-react";
+import { useFilterStore } from "@/store/filterStore";
 import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
 import { FontInfo, FontState } from "@/types/font";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Italic } from "lucide-react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router";
 import { useDebouncedCallback } from "use-debounce";
 import "./ListView.css";
@@ -21,6 +29,7 @@ interface ListRowProps {
   previewText: string;
   fontFamilyName: string;
   onNavigate: () => void;
+  onContextMenu: (event: React.MouseEvent) => void;
 }
 
 function ListRow({
@@ -31,22 +40,18 @@ function ListRow({
   fontItalic,
   previewText,
   onNavigate,
+  onContextMenu,
 }: ListRowProps) {
   const [displayText, setDisplayText] = useState("");
 
+  // 字体缺少的字形替换为方框，避免浏览器回退到其他字体造成误解
   useEffect(() => {
     const previewDisplayText = previewText.trim() || displayName;
     checkGlyphsInFont(font.path, previewDisplayText)
       .then((results) => {
-        const constructedText = results
-          .map((res) => (res.exists ? res.glyph : "□"))
-          .join("");
-        setDisplayText(constructedText);
+        setDisplayText(results.map((res) => (res.exists ? res.glyph : "□")).join(""));
       })
-      .catch((error) => {
-        console.error("Failed to check glyphs in font:", error);
-        setDisplayText(previewDisplayText);
-      });
+      .catch(() => setDisplayText(previewDisplayText));
   }, [displayName, previewText, font.path]);
 
   const simplifyLanguage = (lang: string) => {
@@ -76,6 +81,7 @@ function ListRow({
         height: fontSize * 1.2 + 25,
       }}
       onClick={onNavigate}
+      onContextMenu={onContextMenu}
     >
       <div
         className="list-cell preview-cell"
@@ -117,6 +123,8 @@ function ListRow({
 export function ListView() {
   const uiStore = useUIStore();
   const fontStore = useFontStore();
+  const criteria = useFilterStore((state) => state.criteria);
+  const clearCriteria = useFilterStore((state) => state.clearCriteria);
   const parentRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -127,48 +135,13 @@ export function ListView() {
     detailPreviewFontSize,
     detailPreviewFontWeight,
     detailPreviewItalic,
-    setDetailPreviewFontSize,
-    setDetailPreviewFontWeight,
-    setDetailPreviewItalic,
   } = useUIStore();
 
-  const filtered_font_families = useMemo(() => {
-    if (!fontState) return [];
-    const filters = uiStore.filters ?? {};
-    const langFilters = Array.isArray(filters.languages)
-      ? filters.languages
-      : [];
-    const searchText = filters.searchText?.toLowerCase().trim() || "";
-
-    return fontState.css_font_families.filter((fm) => {
-      const font = fontStore.getFontById(fm.default_font_id);
-      if (!font) return false;
-
-      if (
-        langFilters.length > 0 &&
-        !langFilters.every((l) => font.languages.includes(l))
-      ) {
-        return false;
-      }
-
-      if (searchText) {
-        const family = font.family?.toLowerCase() || "";
-        const fullName = font.full_name?.toLowerCase() || "";
-        const familyZh = font.family_zh?.toLowerCase() || "";
-        const fullNameZh = font.full_name_zh?.toLowerCase() || "";
-
-        const matchesSearch =
-          family.includes(searchText) ||
-          fullName.includes(searchText) ||
-          familyZh.includes(searchText) ||
-          fullNameZh.includes(searchText);
-
-        if (!matchesSearch) return false;
-      }
-
-      return true;
-    });
-  }, [uiStore.filters, fontState, fontStore]);
+  const filtered_font_families = useFilteredFamilies();
+  const { familyName } = useFontNames();
+  const { t } = useI18n();
+  const [menu, setMenu] = useState<{ x: number; y: number; family: string; title: string } | null>(null);
+  const [tagging, setTagging] = useState<{ family: string; title: string } | null>(null);
 
   const rowVirtualizer = useVirtualizer({
     count: filtered_font_families.length,
@@ -221,91 +194,17 @@ export function ListView() {
 
   if (!fontState) return null;
 
-  if (filtered_font_families.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">No fonts match your filters</p>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <FontToolbar>
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-muted-foreground whitespace-nowrap">
-            Size:
-          </label>
-          <input
-            type="range"
-            min="12"
-            max="48"
-            step="1"
-            value={detailPreviewFontSize}
-            onChange={(e) => setDetailPreviewFontSize(Number(e.target.value))}
-            onInput={(e) => {
-              const target = e.target as HTMLInputElement;
-              const percent = ((Number(target.value) - 12) / (48 - 12)) * 100;
-              target.style.setProperty('--slider-progress', `${percent}%`);
-            }}
-            style={{
-              '--slider-progress': `${((detailPreviewFontSize - 12) / (48 - 12)) * 100}%`
-            } as React.CSSProperties}
-            className="minimal-slider w-24"
-          />
-          <input
-            type="number"
-            min="12"
-            max="48"
-            value={detailPreviewFontSize}
-            onChange={(e) => setDetailPreviewFontSize(Number(e.target.value))}
-            className="w-14 px-2 py-1 text-xs border border-border rounded bg-background"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-muted-foreground whitespace-nowrap">
-            Weight:
-          </label>
-          <input
-            type="range"
-            min="100"
-            max="900"
-            step="100"
-            value={detailPreviewFontWeight}
-            onChange={(e) => setDetailPreviewFontWeight(Number(e.target.value))}
-            onInput={(e) => {
-              const target = e.target as HTMLInputElement;
-              const percent = ((Number(target.value) - 100) / (900 - 100)) * 100;
-              target.style.setProperty('--slider-progress', `${percent}%`);
-            }}
-            style={{
-              '--slider-progress': `${((detailPreviewFontWeight - 100) / (900 - 100)) * 100}%`
-            } as React.CSSProperties}
-            className="minimal-slider w-24"
-          />
-          <input
-            type="number"
-            min="100"
-            max="900"
-            step="100"
-            value={detailPreviewFontWeight}
-            onChange={(e) => setDetailPreviewFontWeight(Number(e.target.value))}
-            className="w-14 px-2 py-1 text-xs border border-border rounded bg-background"
-          />
-        </div>
-        <button
-          onClick={() => setDetailPreviewItalic(!detailPreviewItalic)}
-          className={`p-2 rounded transition-colors ${
-            detailPreviewItalic
-              ? "bg-foreground text-background"
-              : "bg-muted text-muted-foreground hover:bg-muted/80"
-          }`}
-          title="Toggle italic"
-        >
-          <Italic className="w-4 h-4" />
-        </button>
-      </FontToolbar>
+      <ContentBar />
+
+      {filtered_font_families.length === 0 && (
+        <EmptyState
+          message={t("empty.noMatches")}
+          onClear={hasCriteria(criteria) ? clearCriteria : undefined}
+        />
+      )}
 
       {/* List */}
       <div ref={parentRef} className="flex-1 overflow-auto">
@@ -323,10 +222,7 @@ export function ListView() {
             const font = fontStore.getFontById(fm.default_font_id);
             if (!font) return null;
 
-            const displayName =
-              uiStore.language === "zh-CN" && font.family_zh
-                ? font.family_zh
-                : font.family;
+            const displayName = familyName(font);
 
             return (
               <div
@@ -349,6 +245,10 @@ export function ListView() {
                   fontItalic={detailPreviewItalic}
                   previewText={uiStore.previewText}
                   fontFamilyName={fm.name}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    setMenu({ x: event.clientX, y: event.clientY, family: fm.name, title: displayName });
+                  }}
                   onNavigate={() =>
                     navigate(`/family/${encodeURIComponent(fm.name)}`)
                   }
@@ -358,6 +258,23 @@ export function ListView() {
           })}
         </div>
       </div>
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          items={[
+            {
+              label: t("menu.tags"),
+              icon: <TagIcon />,
+              onClick: () => setTagging({ family: menu.family, title: menu.title }),
+            },
+          ]}
+        />
+      )}
+      {tagging && (
+        <TagPicker families={[tagging.family]} title={tagging.title} onClose={() => setTagging(null)} />
+      )}
     </div>
   );
 }

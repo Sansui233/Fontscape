@@ -1,58 +1,129 @@
+import type {
+  AppInfo,
+  BootstrapPayload,
+  CommandError,
+  PersistedUIState,
+  UserPreferences,
+} from "@/types/application";
+import type {
+  CreateFilterInput,
+  CreateFolderInput,
+  DeleteFolderMode,
+  FilterFolder,
+  SavedFilter,
+  UpdateFilterInput,
+} from "@/types/filter";
 import { FontState } from "@/types/font";
+import type { Tag } from "@/types/tag";
 import { invoke } from "@tauri-apps/api/core";
 
-export async function scanFonts(): Promise<FontState> {
+/** 把 invoke 抛出的任意值统一为 CommandError */
+export function toCommandError(error: unknown): CommandError {
+  if (error && typeof error === "object" && "code" in error && "message" in error) {
+    return error as CommandError;
+  }
+  return { code: "unknown", message: String(error) };
+}
+
+async function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
   try {
-    return await invoke<FontState>("scan_fonts");
+    return await invoke<T>(command, args);
   } catch (error) {
-    console.error("Failed to scan fonts:", error);
-    throw error;
+    console.error(`Command ${command} failed:`, error);
+    throw toCommandError(error);
   }
 }
 
-export async function refreshFonts(): Promise<FontState> {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  try {
-    return await invoke<FontState>("refresh_fonts");
-  } catch (error) {
-    console.error("Failed to refresh fonts:", error);
-    throw error;
-  }
+export function bootstrapApp(): Promise<BootstrapPayload> {
+  return call("bootstrap_app");
 }
 
-export async function toggleFont(
-  fontId: string,
-  enable: boolean
-): Promise<void> {
-  try {
-    await invoke("toggle_font", { fontId, enable });
-  } catch (error) {
-    console.error("Failed to toggle font:", error);
-    throw error;
-  }
+export function scanFonts(): Promise<FontState> {
+  return call("scan_fonts");
 }
 
-export async function checkGlyphsInFont(
+export function refreshFonts(): Promise<FontState> {
+  return call("refresh_fonts");
+}
+
+export function createFilter(input: CreateFilterInput): Promise<SavedFilter> {
+  return call("create_filter", { input });
+}
+
+export function updateFilter(input: UpdateFilterInput): Promise<SavedFilter> {
+  return call("update_filter", { input });
+}
+
+export function deleteFilter(id: string): Promise<void> {
+  return call("delete_filter", { id });
+}
+
+export function moveFilter(id: string, folderId: string | null): Promise<void> {
+  return call("move_filter", { id, folderId });
+}
+
+export function createFolder(input: CreateFolderInput): Promise<FilterFolder> {
+  return call("create_folder", { input });
+}
+
+export function renameFolder(id: string, name: string): Promise<FilterFolder> {
+  return call("rename_folder", { id, name });
+}
+
+export function moveFolder(id: string, parentId: string | null): Promise<void> {
+  return call("move_folder", { id, parentId });
+}
+
+/** 返回随文件夹一起删除的筛选 ID */
+export function deleteFolder(id: string, mode: DeleteFolderMode): Promise<string[]> {
+  return call("delete_folder", { id, mode });
+}
+
+export function createTag(name: string): Promise<Tag> {
+  return call("create_tag", { name });
+}
+
+export function renameTag(id: string, name: string): Promise<Tag> {
+  return call("rename_tag", { id, name });
+}
+
+export function deleteTag(id: string): Promise<void> {
+  return call("delete_tag", { id });
+}
+
+/** tagged 为 true 时给这些家族加上标签，否则去掉 */
+export function setFamilyTag(tagId: string, families: string[], tagged: boolean): Promise<void> {
+  return call("set_family_tag", { tagId, families, tagged });
+}
+
+export function saveUiState(uiState: PersistedUIState): Promise<void> {
+  return call("save_ui_state", { uiState });
+}
+
+export function savePreferences(preferences: UserPreferences): Promise<void> {
+  return call("save_preferences", { preferences });
+}
+
+export function getAppInfo(): Promise<AppInfo> {
+  return call("get_app_info");
+}
+
+/** 备份并重建数据库，返回备份文件路径 */
+export function resetDatabase(): Promise<string | null> {
+  return call("reset_database");
+}
+
+export function toggleFont(fontId: string, enable: boolean): Promise<void> {
+  return call("toggle_font", { fontId, enable });
+}
+
+export function checkGlyphsInFont(
   fontPath: string,
   text: string
 ): Promise<{ glyph: string; exists: boolean }[]> {
-  try {
-    return await invoke<{ glyph: string; exists: boolean }[]>(
-      "check_glyphs_in_font",
-      { fontPath, text }
-    );
-  } catch (error) {
-    console.error("Failed to check glyphs in font:", error);
-    throw error;
-  }
+  return call("check_glyphs_in_font", { fontPath, text });
 }
 
-export async function openInExplorer(path: string): Promise<void> {
-  try {
-    await invoke("open_in_explorer", { path });
-  } catch (error) {
-    console.error("Failed to open in explorer:", error);
-    throw error;
-  }
+export function openInExplorer(path: string): Promise<void> {
+  return call("open_in_explorer", { path });
 }

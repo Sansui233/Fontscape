@@ -15,41 +15,52 @@ Windows 自带的字体软件对于语言的分类筛选几乎等于不可用。
 
 另外，网上的字体文件元数据比较混乱，例如部分简体中文字体的 css 字体家族名其实是繁体等等。因此使用浏览器解析的优先级来获取可用的 css font-family name.
 
+## 功能
+
+- **浏览**：网格和列表视图（虚拟滚动），实时预览文字与字号，缺失的字形显示为 □
+- **筛选**：按语言、类型（衬线 / 无衬线 / 等宽 / 手写 / 装饰）、名称和标签筛选
+- **已存筛选**：把条件保存为命名筛选，可用多级文件夹整理，支持拖动
+- **标签**：通过卡片 / 列表右键菜单、多选模式或详情页给字体家族打标签
+- **详情页**：家族全部字重、多文字样张、Name 表元数据
+- **本地化名称**：按界面语言显示中文 / 日文 / 韩文字体名
+- **界面**：English、简体中文、日本語、한국어；浅色 / 深色 / 跟随系统
+- **本地存储**：筛选、标签、设置和上次的界面状态保存在本地 SQLite 数据库
+
 ## TODO
 
-- [ ] 字体预览，支持自定义字号和预览文本
-- [ ] 智能搜索，支持拼音搜索中文字体
-- [ ] 按语言和类型分类过滤字体
-- [ ] 网格视图和纸张视图两种模式
-- [ ] 右键菜单快捷操作
-- [ ] 多选模式支持批量操作
-- [ ] 使用开放源下载
+- [ ] 快速启动（字体解析增量缓存）
+- [ ] 拼音搜索中文字体
+- [ ] 纸张视图
+- [ ] 多选模式下的批量操作
 - [ ] 安装/移除/开关 字体
+- [ ] 使用开放源下载
+- [ ] 导出字体样张
 
 ## 截图
 
-![Main View](./docs/media/main.jpg)
-![Modal View](./docs/media/font-modal.jpg)
+![Main View](./docs/media/main.png)
 
 ## 技术栈
 
 ### 前端
-- React 18 + TypeScript
-- TailwindCSS + shadcn/ui
+- React 19 + TypeScript
+- Tailwind CSS 4
 - Zustand（状态管理）
 - TanStack Virtual（虚拟滚动）
+- React Router 7
 - Vite
 
 ### 后端
-- Tauri 2.x
+- Tauri 2
 - Rust
-- Windows API 绑定
 - ttf-parser（字体解析）
+- rusqlite（本地存储）
+- Windows API 绑定
 
 ## 快速开始
 
 ### 环境要求
-- Node.js 18+
+- Node.js 18+ 和 pnpm
 - Rust 1.70+
 - Windows 10/11
 
@@ -63,17 +74,17 @@ cd fontscape
 
 2. 安装依赖：
 ```bash
-npm install
+pnpm install
 ```
 
 3. 开发模式运行：
 ```bash
-npm run tauri:dev
+pnpm tauri:dev
 ```
 
 4. 生产环境构建：
 ```bash
-npm run tauri:build
+pnpm tauri:build
 ```
 
 ## 项目结构
@@ -81,15 +92,20 @@ npm run tauri:build
 ```
 fontscape/
 ├── src/                    # React 前端
-│   ├── components/         # UI 组件
-│   ├── hooks/              # 自定义 React Hooks
+│   ├── components/         # UI 组件（布局、字体、筛选、标签、设置）
+│   ├── pages/              # 网格、列表和字体家族详情页
 │   ├── store/              # Zustand 状态管理
-│   └── lib/                # 工具函数和 API
+│   ├── i18n/               # 界面翻译
+│   └── lib/                # 工具函数和 Tauri API 封装
 ├── src-tauri/              # Rust 后端
 │   └── src/
-│       ├── font/           # 字体扫描和解析
-│       └── lib.rs          # Tauri 命令
-└── claude.md               # 技术架构文档
+│       ├── font/           # 字体扫描、解析和分类
+│       ├── filters/        # 已存筛选和文件夹
+│       ├── tags/           # 字体家族标签
+│       ├── settings/       # 界面状态和偏好设置
+│       ├── persistence/    # SQLite 数据库与结构升级
+│       └── commands.rs     # Tauri 命令
+└── docs/                   # 设计说明和功能完成度
 ```
 
 ## 开发路线图
@@ -99,8 +115,8 @@ fontscape/
 - [x] 阶段 3：字体预览
 - [x] 阶段 4：搜索功能
 - [ ] 阶段 5：字体管理（启用/禁用）
-- [ ] 阶段 6：分类和过滤
-- [ ] 阶段 7：字体详情页
+- [x] 阶段 6：分类和过滤
+- [x] 阶段 7：字体详情页
 - [ ] 阶段 8：性能优化
 - [ ] 阶段 9：打磨和发布
 

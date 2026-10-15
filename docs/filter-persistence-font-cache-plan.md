@@ -246,10 +246,20 @@ FontInfo 新增可空的 `category` 字段；当前 scanner 返回 null，表示
 | --- | --- | --- |
 | Phase 0 | 统一数据格式，修正文件大小字段，准备共用过滤函数 | 基础完成，统一错误格式待补 |
 | Phase 1 | 建立 SQLite、结构升级、语言预设和后端读写 | 基础完成，review 问题待补 |
-| Phase 2 | 确定并加入 Category 分类，实现增量字体缓存和单一启动接口 | 未开始，分类方法待定 |
-| Phase 3 | Grid/List 接入共同的 Filter store 和过滤函数 | 未开始 |
-| Phase 4 | 做 Toolbar Filter 面板，接通 create command/action 和命名保存 | 未开始 |
-| Phase 5 | 做 Sidebar 分组，接通 update/delete command/action 和编辑删除 | 未开始 |
-| Phase 6 | 保存界面偏好、补齐失败提示并完成验收 | 未开始 |
+| Phase 2 | 确定并加入 Category 分类，实现增量字体缓存和单一启动接口 | 分类、`bootstrap_app` 已完成；**增量缓存未做** |
+| Phase 3 | Grid/List 接入共同的 Filter store 和过滤函数 | 完成 |
+| Phase 4 | 做 Toolbar Filter 面板，接通 create command/action 和命名保存 | 完成 |
+| Phase 5 | 做 Sidebar 分组，接通 update/delete command/action 和编辑删除 | 完成 |
+| Phase 6 | 保存界面偏好、补齐失败提示并完成验收 | 代码完成，待用户手动验收 |
+
+2026-10-16 实施说明：
+- 第 5 节 review 的前三项已修复：在同一事务内写入并读回；条件只接受已知值，并去重排序；只有 `name_key` 冲突才报重名，其余错误统一返回 `{code, message}`。
+- 第 4 项已修复：数据库初始化失败时应用仍能启动，bootstrap 会显示原因和数据库路径，并提供重试按钮。
+- 第 5 项已修复：`view_mode` 改为枚举，与 TS 类型一致。
+- 2026-10-16 UI 调整：原 Toolbar 合并进单行标题栏，已选条件改为内容区顶部的 chip 行（ContentBar）。下文中的「Toolbar」都指标题栏里的 Filter 按钮。
+- 已决定的待定项：
+  - 面板点击才打开（不是 hover）；
+  - Language 与 Category 必须由同一个 face 满足；
+  - 分类规则见 `font/classifier.rs`，版本号 `CLASSIFIER_VERSION` 预留给缓存使用。
 
 继续开发时先补齐第 5 节的后端问题，再进入 Phase 2。每阶段报告实际完成的行为和验证结果。

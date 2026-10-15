@@ -1,8 +1,11 @@
+import { useI18n, valueLabel } from "@/i18n";
 import { formatFontWeight } from "@/lib/font";
+import { useFontNames } from "@/lib/font-names";
 import { formatDate, formatFileSize } from "@/lib/utils";
-import { useUIStore } from "@/store/uiStore";
 import { FontInfo } from "@/types/font";
 import { X } from "lucide-react";
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface FontInfoModalProps {
   font: FontInfo;
@@ -10,122 +13,116 @@ interface FontInfoModalProps {
 }
 
 export function FontInfoModal({ font, onClose }: FontInfoModalProps) {
-  const store = useUIStore()
-  const displayName = (store.language === 'zh-CN' && font.family_zh) ? font.family_zh : font.family;
-  console.debug("%% FontInfoModal render for font:", font);
+  const { t } = useI18n();
+  const { familyName } = useFontNames();
+  const displayName = familyName(font);
 
-  // Metadata entries to display
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  // OpenType Name ID 0–20（ID 15 保留未用）
   const metadataEntries = [
-    { label: "Copyright", value: font.metadata.copyright, id: 0 },
-    { label: "Family Name", value: font.metadata.family_name, id: 1 },
-    { label: "Subfamily Name", value: font.metadata.subfamily_name, id: 2 },
-    { label: "Unique Identifier", value: font.metadata.unique_identifier, id: 3 },
-    { label: "Full Name", value: font.metadata.full_name, id: 4 },
-    { label: "Version", value: font.metadata.version, id: 5 },
-    { label: "PostScript Name", value: font.metadata.postscript_name, id: 6 },
-    { label: "Trademark", value: font.metadata.trademark, id: 7 },
-    { label: "Manufacturer", value: font.metadata.manufacturer, id: 8 },
-    { label: "Designer", value: font.metadata.designer, id: 9 },
-    { label: "Description", value: font.metadata.description, id: 10 },
-    { label: "Vendor URL", value: font.metadata.vendor_url, id: 11, isUrl: true },
-    { label: "Designer URL", value: font.metadata.designer_url, id: 12, isUrl: true },
-    { label: "License", value: font.metadata.license, id: 13 },
-    { label: "License URL", value: font.metadata.license_url, id: 14, isUrl: true },
-    { label: "Typographic Family", value: font.metadata.typographic_family, id: 16 },
-    { label: "Typographic Subfamily", value: font.metadata.typographic_subfamily, id: 17 },
-    { label: "Compatible Full", value: font.metadata.compatible_full, id: 18 },
-    { label: "Sample Text", value: font.metadata.sample_text, id: 19 },
-    { label: "PostScript CID", value: font.metadata.postscript_cid, id: 20 },
-  ].filter(entry => entry.value); // Only show entries with values
+    { label: t("meta.copyright"), value: font.metadata.copyright, id: 0 },
+    { label: t("meta.familyName"), value: font.metadata.family_name, id: 1 },
+    { label: t("meta.subfamilyName"), value: font.metadata.subfamily_name, id: 2 },
+    { label: t("meta.uniqueId"), value: font.metadata.unique_identifier, id: 3 },
+    { label: t("meta.fullName"), value: font.metadata.full_name, id: 4 },
+    { label: t("meta.version"), value: font.metadata.version, id: 5 },
+    { label: t("meta.postscriptName"), value: font.metadata.postscript_name, id: 6 },
+    { label: t("meta.trademark"), value: font.metadata.trademark, id: 7 },
+    { label: t("meta.manufacturer"), value: font.metadata.manufacturer, id: 8 },
+    { label: t("meta.designer"), value: font.metadata.designer, id: 9 },
+    { label: t("meta.description"), value: font.metadata.description, id: 10 },
+    { label: t("meta.vendorUrl"), value: font.metadata.vendor_url, id: 11, isUrl: true },
+    { label: t("meta.designerUrl"), value: font.metadata.designer_url, id: 12, isUrl: true },
+    { label: t("meta.license"), value: font.metadata.license, id: 13 },
+    { label: t("meta.licenseUrl"), value: font.metadata.license_url, id: 14, isUrl: true },
+    { label: t("meta.typographicFamily"), value: font.metadata.typographic_family, id: 16 },
+    { label: t("meta.typographicSubfamily"), value: font.metadata.typographic_subfamily, id: 17 },
+    { label: t("meta.compatibleFull"), value: font.metadata.compatible_full, id: 18 },
+    { label: t("meta.sampleText"), value: font.metadata.sample_text, id: 19 },
+    { label: t("meta.postscriptCid"), value: font.metadata.postscript_cid, id: 20 },
+  ].filter((entry) => entry.value);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-card border border-border rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={(e) => { e.stopPropagation(); }}>
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold" style={{ fontFamily: `"${font.css_font_family}", sans-serif` }}>
+  const fontStyle = { fontFamily: `"${font.css_font_family}", sans-serif`, fontWeight: font.weight };
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25" onMouseDown={onClose}>
+      <div
+        className="bg-popover border border-border rounded-xl shadow-2xl w-[min(720px,calc(100vw-32px))] max-h-[88vh] flex flex-col"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start gap-3 px-5 pt-4 pb-3 border-b border-border">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-[18px] font-semibold truncate" style={fontStyle}>
               {displayName}
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              {font.style} • {font.format} • {formatFileSize(font.file_size)}
+            <p className="text-[12px] text-muted-foreground">
+              {font.style} · {font.format} · {formatFileSize(font.file_size)}
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 hover:bg-muted rounded-lg transition-colors"
-            title="Close"
+            title={t("info.close")}
+            className="w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Preview */}
-          <section>
-            <h3 className="text-lg font-semibold mb-3">Preview</h3>
-            <div
-              className="p-6 bg-muted/30 rounded-lg text-4xl leading-relaxed"
-              style={{ fontFamily: `"${font.css_font_family}", sans-serif`, fontWeight: font.weight }}
-            >
-              {displayName}
-            </div>
-            <div
-              className="mt-3 p-4 bg-muted/30 rounded-lg text-base"
-              style={{ fontFamily: `"${font.css_font_family}", sans-serif`, fontWeight: font.weight }}
-            >
-              The quick brown fox jumps over the lazy dog<br />
-              0123456789
-            </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 text-[13px]">
+          <section className="rounded-lg bg-muted/40 px-4 py-3 space-y-1" style={fontStyle}>
+            <div className="text-[32px] leading-tight">{displayName}</div>
+            <div className="text-[15px]">The quick brown fox jumps over the lazy dog 0123456789</div>
           </section>
 
-          {/* Basic Info */}
-          <section>
-            <h3 className="text-lg font-semibold mb-3">Basic Information</h3>
-            <dl className="grid grid-cols-1 gap-3">
-              <InfoRow label="CSS Font Family" value={font.css_font_family} />
-              <InfoRow label="Weight" value={formatFontWeight(font.weight)} />
-              <InfoRow label="File Path" value={font.path} />
-              <InfoRow label="Format" value={font.format} />
-              <InfoRow label="File Size" value={formatFileSize(font.file_size)} />
-              <InfoRow label="Status" value={font.status} />
-              <InfoRow label="Variable Font" value={font.is_variable ? "Yes" : "No"} />
-              <InfoRow label="Languages" value={font.languages.join(", ")} />
-              <InfoRow label="Scripts" value={font.scripts.join(", ")} />
-              <InfoRow label="Added" value={formatDate(font.created_at)} />
-            </dl>
-          </section>
+          <Section title={t("info.basic")}>
+            <InfoRow label={t("info.cssFamily")} value={font.css_font_family} />
+            <InfoRow label={t("info.weight")} value={formatFontWeight(font.weight)} />
+            <InfoRow label={t("info.filePath")} value={font.path} />
+            <InfoRow label={t("info.format")} value={font.format} />
+            <InfoRow label={t("info.fileSize")} value={formatFileSize(font.file_size)} />
+            <InfoRow label={t("info.status")} value={valueLabel(t, "status", font.status)} />
+            <InfoRow label={t("info.variableFont")} value={font.is_variable ? t("info.yes") : t("info.no")} />
+            <InfoRow
+              label={t("info.languages")}
+              value={font.languages.map((value) => valueLabel(t, "language", value)).join(", ")}
+            />
+            <InfoRow label={t("info.scripts")} value={font.scripts.join(", ")} />
+            <InfoRow label={t("info.scanned")} value={formatDate(font.created_at)} />
+          </Section>
 
-          {/* Font Metadata (Name IDs) */}
           {metadataEntries.length > 0 && (
-            <section>
-              <h3 className="text-lg font-semibold mb-3">Font Metadata (OpenType Name IDs)</h3>
-              <dl className="grid grid-cols-1 gap-3">
-                {metadataEntries.map((entry) => (
-                  <InfoRow
-                    key={entry.id}
-                    label={`${entry.label} (ID ${entry.id})`}
-                    value={entry.value || ""}
-                    isUrl={entry.isUrl}
-                  />
-                ))}
-              </dl>
-            </section>
+            <Section title={t("info.metadataTitle")}>
+              {metadataEntries.map((entry) => (
+                <InfoRow
+                  key={entry.id}
+                  label={`${entry.label} (${entry.id})`}
+                  value={entry.value || ""}
+                  isUrl={entry.isUrl}
+                />
+              ))}
+            </Section>
           )}
         </div>
-
-        {/* Footer */}
-        <div className="p-6 border-t border-border">
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            Close
-          </button>
-        </div>
       </div>
-    </div>
+    </div>,
+    document.body
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <h3 className="mb-2 text-[11px] font-semibold text-muted-foreground">{title}</h3>
+      <dl className="space-y-1.5">{children}</dl>
+    </section>
   );
 }
 
@@ -137,20 +134,15 @@ interface InfoRowProps {
 
 function InfoRow({ label, value, isUrl }: InfoRowProps) {
   return (
-    <div className="grid grid-cols-3 gap-2">
-      <dt className="font-medium text-muted-foreground">{label}:</dt>
-      <dd className="col-span-2 break-words">
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-3">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="break-words">
         {isUrl ? (
-          <a
-            href={value}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline"
-          >
+          <a href={value} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
             {value}
           </a>
         ) : (
-          <span className="text-foreground">{value}</span>
+          value
         )}
       </dd>
     </div>

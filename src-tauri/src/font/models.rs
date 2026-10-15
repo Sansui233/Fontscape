@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FontInfo {
@@ -23,8 +24,18 @@ pub struct FontInfo {
     // Localized names - 中文本地化名称
     pub family_zh: Option<String>,    // OpenType Name ID 1，language_id: 0x0804/0x1004/0x0404 (简体/新加坡/繁体)
     pub full_name_zh: Option<String>, // OpenType Name ID 4，language_id: 0x0804/0x1004/0x0404
+    /// 按界面语言显示的本地化名称，键为 zh-Hans / zh-Hant / ja / ko
+    #[serde(default)]
+    pub localized_names: BTreeMap<String, LocalizedName>,
     // CSS font-family 名称 - 浏览器匹配优先级: ID 16 > ID 1 > ID 21
     pub css_font_family: String,      // 优先 Name ID 16 (Typographic Family)，回退到 ID 1 (Family)
+}
+
+/// Name table 中某一语言的家族名 (ID 1) 与全名 (ID 4)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LocalizedName {
+    pub family: String,
+    pub full_name: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -102,3 +113,8 @@ impl Default for FontMetadata {
         }
     }
 }
+
+/// scanner 可能产出的全部语言值，前端选项与后端 Filter 校验共用这份列表
+pub const LANGUAGES: &[&str] = &[
+    "English", "Chinese", "Japanese", "Korean", "Russian", "Arabic", "Unknown",
+];

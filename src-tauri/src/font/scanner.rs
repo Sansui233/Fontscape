@@ -1,8 +1,20 @@
+use super::classifier;
 use super::models::*;
 use super::state::FontState;
+use rayon::prelude::*;
+use std::collections::BTreeMap;
 use std::fs;
-use std::path::PathBuf;
+use memmap2::Mmap;
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
+
+/// 内存映射字体文件。ttf-parser 只访问用到的表（name、OS/2、cmap 等），
+/// 操作系统也只读取对应的页，避免把整个文件（CJK 字体常达数十至上百 MB）读入内存。
+pub(crate) fn map_font_file(path: &Path) -> Result<Mmap, String> {
+    let file = fs::File::open(path).map_err(|e| format!("Failed to open file: {}", e))?;
+    // SAFETY: 映射只在解析期间短暂持有；映射期间 Windows 不允许截断或删除该文件
+    unsafe { Mmap::map(&file) }.map_err(|e| format!("Failed to map file: {}", e))
+}
 
 pub struct FontScanner {
     font_dirs: Vec<PathBuf>,
@@ -19,6 +31,11 @@ impl FontScanner {
         }
     }
 
+    /// 扫描的字体目录（系统 + 当前用户）
+    pub fn font_dirs(&self) -> &[PathBuf] {
+        &self.font_dirs
+    }
+
     /// Get user fonts directory
     fn get_user_fonts_dir() -> PathBuf {
         if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
@@ -30,69 +47,44 @@ impl FontScanner {
 
     /// Scan all fonts in the system and return FontState
     pub fn scan_all_fonts(&self) -> Result<FontState, String> {
-        let mut fonts = Vec::new();
-        let mut errors = Vec::new();
-
-        println!("Starting font scan...");
+        let mut paths = Vec::new();
 
         for dir in &self.font_dirs {
-            println!("Scanning directory: {:?}", dir);
-
             if !dir.exists() {
-                println!("Directory does not exist: {:?}", dir);
                 continue;
             }
-
             match fs::read_dir(dir) {
-                Ok(entries) => {
-                    for entry in entries {
-                        match entry {
-                            Ok(entry) => {
-                                let path = entry.path();
+                Ok(entries) => paths.extend(
+                    entries
+                        .filter_map(|entry| entry.ok())
+                        .map(|entry| entry.path())
+                        .filter(|path| path.is_file() && Self::is_font_file(path)),
+                ),
+                Err(e) => println!("Failed to read directory {:?}: {}", dir, e),
+            }
+        }
 
-                                if !path.is_file() {
-                                    continue;
-                                }
+        let results: Vec<_> = paths
+            .par_iter()
+            .map(|path| (path, self.parse_font(path)))
+            .collect();
 
-                                if Self::is_font_file(&path) {
-                                    match self.parse_font(&path) {
-                                        Ok(font_list) => {
-                                            fonts.extend(font_list);
-                                        }
-                                        Err(e) => {
-                                            errors.push(format!("{:?}: {}", path, e));
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                errors.push(format!("Failed to read entry: {}", e));
-                            }
-                        }
+        let mut fonts = Vec::new();
+        let mut error_count = 0;
+        for (path, result) in results {
+            match result {
+                Ok(font_list) => fonts.extend(font_list),
+                Err(e) => {
+                    error_count += 1;
+                    if error_count <= 10 {
+                        println!("  Error {}: {:?}: {}", error_count, path, e);
                     }
                 }
-                Err(e) => {
-                    println!("Failed to read directory {:?}: {}", dir, e);
-                }
             }
         }
+        println!("Scan complete. Found {} fonts, {} errors", fonts.len(), error_count);
 
-        println!("Scan complete. Found {} fonts", fonts.len());
-        if !errors.is_empty() {
-            println!("Encountered {} errors during scan", errors.len());
-            for (i, error) in errors.iter().take(10).enumerate() {
-                println!("  Error {}: {}", i + 1, error);
-            }
-        }
-
-        // Create FontState which automatically aggregates CSS font families
-        let state = FontState::new(fonts);
-        println!(
-            "Aggregated into {} CSS font families",
-            state.css_font_family_count()
-        );
-
-        Ok(state)
+        Ok(FontState::new(fonts))
     }
 
     /// Check if file is a font file
@@ -109,29 +101,33 @@ impl FontScanner {
 
     /// Parse a single font file (returns Vec because TTC files contain multiple fonts)
     fn parse_font(&self, path: &PathBuf) -> Result<Vec<FontInfo>, String> {
-        let data = fs::read(path).map_err(|e| format!("Failed to read file: {}", e))?;
+        let data = map_font_file(path)?;
         let metadata = fs::metadata(path).map_err(|e| format!("Failed to get metadata: {}", e))?;
 
         let mut fonts = Vec::new();
 
         // Determine format
-        let format = match path.extension().and_then(|e| e.to_str()) {
-            Some("ttf") => FontFormat::TrueType,
-            Some("otf") => FontFormat::OpenType,
-            Some("ttc") => FontFormat::TrueTypeCollection,
+        let extension = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+        let format = match extension.as_str() {
+            "otf" => FontFormat::OpenType,
+            "ttc" => FontFormat::TrueTypeCollection,
             _ => FontFormat::TrueType,
         };
 
         // TTC files can contain multiple fonts
         let face_count = if format == FontFormat::TrueTypeCollection {
             // Try to determine number of faces in collection
-            ttf_parser::fonts_in_collection(&data).unwrap_or(1)
+            ttf_parser::fonts_in_collection(&data[..]).unwrap_or(1)
         } else {
             1
         };
 
         for face_index in 0..face_count {
-            match ttf_parser::Face::parse(&data, face_index) {
+            match ttf_parser::Face::parse(&data[..], face_index) {
                 Ok(face) => match self.create_font_info(&face, path, &metadata, format.clone()) {
                     Ok(font_info) => {
                         fonts.push(font_info);
@@ -176,23 +172,13 @@ impl FontScanner {
         let style = Self::extract_name(face, ttf_parser::name_id::SUBFAMILY)
             .unwrap_or_else(|| "Regular".to_string());
 
-        // Extract Chinese (PRC) localized names - language_id = 0x0804
-        let mut family_zh =
-            Self::extract_name_by_language(face, ttf_parser::name_id::FAMILY, 0x0804);
-        let mut full_name_zh =
-            Self::extract_name_by_language(face, ttf_parser::name_id::FULL_NAME, 0x0804);
-        // If not found try language_id = 0x0c04 (Hong Kong)
-        if family_zh.is_none() {
-            family_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FAMILY, 0x1004);
-            full_name_zh =
-                Self::extract_name_by_language(face, ttf_parser::name_id::FULL_NAME, 0x1004);
-        }
-        // If still not found, try Taiwan (0x0404)
-        if family_zh.is_none() {
-            family_zh = Self::extract_name_by_language(face, ttf_parser::name_id::FAMILY, 0x0404);
-            full_name_zh =
-                Self::extract_name_by_language(face, ttf_parser::name_id::FULL_NAME, 0x0404);
-        }
+        // 本地化名称：每种语言按 Windows language_id 优先级查找第一个存在的记录
+        let localized_names = Self::extract_localized_names(face);
+        let zh = localized_names
+            .get("zh-Hans")
+            .or_else(|| localized_names.get("zh-Hant"));
+        let family_zh = zh.map(|name| name.family.clone());
+        let full_name_zh = zh.and_then(|name| name.full_name.clone());
 
         // Generate unique ID
         let id_source = format!("{}-{}-{}", path.to_string_lossy(), family, style);
@@ -217,13 +203,17 @@ impl FontScanner {
         // Extract font weight (priority: fvar wght axis for variable fonts > OS/2 usWeightClass)
         let weight = Self::extract_weight(face);
 
+        let mut category_names = vec![family.as_str(), css_font_family.as_str()];
+        category_names.extend(family_zh.as_deref());
+        let category = classifier::classify(face, &category_names);
+
         Ok(FontInfo {
             id,
             family,
             full_name,
             postscript_name,
             style,
-            category: None,
+            category: Some(category),
             path: path.to_string_lossy().to_string(),
             file_size: metadata.len(),
             format,
@@ -240,6 +230,7 @@ impl FontScanner {
                 .as_secs() as i64,
             family_zh,
             full_name_zh,
+            localized_names,
             css_font_family,
         })
     }
@@ -287,6 +278,32 @@ impl FontScanner {
             }
         }
         None
+    }
+
+    /// 各语言对应的 Windows language_id，按优先级排列
+    const LOCALIZED_LANGUAGE_IDS: &'static [(&'static str, &'static [u16])] = &[
+        ("zh-Hans", &[0x0804, 0x1004]),         // 中国大陆、新加坡
+        ("zh-Hant", &[0x0404, 0x0C04, 0x1404]), // 台湾、香港、澳门
+        ("ja", &[0x0411]),
+        ("ko", &[0x0412]),
+    ];
+
+    fn extract_localized_names(face: &ttf_parser::Face) -> BTreeMap<String, LocalizedName> {
+        let mut names = BTreeMap::new();
+        for (language, ids) in Self::LOCALIZED_LANGUAGE_IDS {
+            let found = ids.iter().find_map(|&id| {
+                Self::extract_name_by_language(face, ttf_parser::name_id::FAMILY, id).map(|family| {
+                    LocalizedName {
+                        family,
+                        full_name: Self::extract_name_by_language(face, ttf_parser::name_id::FULL_NAME, id),
+                    }
+                })
+            });
+            if let Some(name) = found {
+                names.insert(language.to_string(), name);
+            }
+        }
+        names
     }
 
     /// Extract name with fallback to family name

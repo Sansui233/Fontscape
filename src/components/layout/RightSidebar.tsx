@@ -1,207 +1,141 @@
-import { FontInfo } from "@/types/font";
-import { FileText, Folder, Info, ExternalLink } from "lucide-react";
+import { useI18n, valueLabel } from "@/i18n";
+import { formatFontWeight } from "@/lib/font";
+import { useFontNames } from "@/lib/font-names";
 import { openInExplorer } from "@/lib/tauri-api";
+import { formatFileSize } from "@/lib/utils";
 import { useUIStore } from "@/store/uiStore";
-import { useState, useRef, useEffect } from "react";
+import { FontInfo } from "@/types/font";
+import { FolderOpen } from "lucide-react";
+import { ReactNode, useEffect, useState } from "react";
 
-interface RightSidebarProps {
-  font: FontInfo | null;
-}
+const MIN_WIDTH = 240;
+const MAX_WIDTH = 600;
 
-export function RightSidebar({ font }: RightSidebarProps) {
-  const { rightSidebarWidth, setRightSidebarWidth } = useUIStore();
-  const [isResizing, setIsResizing] = useState(false);
-  const [tempWidth, setTempWidth] = useState(rightSidebarWidth);
-  const sidebarRef = useRef<HTMLDivElement>(null);
+/** 详情页右侧信息栏：macOS「显示简介」式的分组 + 两列键值 */
+export function RightSidebar({ font }: { font: FontInfo }) {
+  const { t } = useI18n();
+  const { fullName } = useFontNames();
+  const rightSidebarWidth = useUIStore((state) => state.rightSidebarWidth);
+  const setRightSidebarWidth = useUIStore((state) => state.setRightSidebarWidth);
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
 
+  // 拖动左边缘调整宽度，松开时才写入 store
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
-
-      const newWidth = window.innerWidth - e.clientX;
-      // Constrain width between 240px and 600px
-      const constrainedWidth = Math.max(240, Math.min(600, newWidth));
-      setTempWidth(constrainedWidth);
+    if (dragWidth === null) return;
+    const handleMove = (event: MouseEvent) =>
+      setDragWidth(Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, window.innerWidth - event.clientX)));
+    const handleUp = () => {
+      setRightSidebarWidth(dragWidth);
+      setDragWidth(null);
     };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-      // Update store only when resizing ends
-      setRightSidebarWidth(tempWidth);
-    };
-
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'ew-resize';
-      document.body.style.userSelect = 'none';
-    }
-
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseup", handleUp);
+    document.body.style.cursor = "ew-resize";
+    document.body.style.userSelect = "none";
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", handleUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     };
-  }, [isResizing, tempWidth, setRightSidebarWidth]);
-  // 只在 Modal 打开时显示
+  }, [dragWidth, setRightSidebarWidth]);
 
-  if (!font) {
-    return null;
-  }
-
-  // 格式化文件大小
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  // 格式化路径（截断过长路径）
-  const formatPath = (path: string) => {
-    if (path.length <= 50) return path;
-    const parts = path.split(/[/\\]/);
-    if (parts.length <= 3) return path;
-    return `${parts[0]}\\...\\${parts.slice(-2).join("\\")}`;
-  };
-
-  // Name Table 元数据条目
-  const metadataEntries = [
-    { label: "Copyright", value: font.metadata.copyright },
-    { label: "Designer", value: font.metadata.designer },
-    { label: "Manufacturer", value: font.metadata.manufacturer },
-    { label: "Version", value: font.metadata.version },
-    { label: "License", value: font.metadata.license },
-    { label: "Description", value: font.metadata.description },
-    { label: "Trademark", value: font.metadata.trademark },
+  const metadata = [
+    { label: t("meta.designer"), value: font.metadata.designer },
+    { label: t("meta.manufacturer"), value: font.metadata.manufacturer },
+    { label: t("meta.version"), value: font.metadata.version },
+    { label: t("meta.license"), value: font.metadata.license },
+    { label: t("meta.copyright"), value: font.metadata.copyright },
+    { label: t("meta.trademark"), value: font.metadata.trademark },
+    { label: t("meta.description"), value: font.metadata.description },
   ].filter((entry) => entry.value);
 
   return (
-    <div
-      ref={sidebarRef}
-      className="absolute top-0 right-0 bottom-0 bg-card border-l border-border z-30 overflow-y-auto"
-      style={{ width: `${isResizing ? tempWidth : rightSidebarWidth}px` }}
+    <aside
+      className="absolute top-0 right-0 bottom-0 z-30 border-l border-border bg-background overflow-y-auto"
+      style={{ width: dragWidth ?? rightSidebarWidth }}
     >
-      {/* Resize handle */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/50 transition-colors"
-        onMouseDown={() => setIsResizing(true)}
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-brand/40 transition-colors"
+        onMouseDown={() => setDragWidth(rightSidebarWidth)}
       />
-      <div className="p-6 space-y-6">
-        {/* 标题 */}
+
+      <div className="px-4 py-5 space-y-5 text-[12px]">
         <div>
-          <h2
-            className="text-lg font-semibold text-foreground truncate"
-            title={font.full_name}
-          >
-            {font.full_name}
-          </h2>
-          <p className="text-sm text-muted-foreground">{font.style}</p>
+          <h2 className="text-[14px] font-semibold leading-snug break-words">{fullName(font)}</h2>
+          <p className="text-muted-foreground">{font.style}</p>
         </div>
 
-        {/* 文件信息 */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-            <Folder className="w-4 h-4" />
-            File Info
-          </h3>
-          <div className="text-sm space-y-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <span className="text-muted-foreground">Path: </span>
-                <span className="text-foreground break-all" title={font.path}>
-                  {formatPath(font.path)}
-                </span>
-              </div>
-              <button
-                onClick={() => openInExplorer(font.path)}
-                className="flex-shrink-0 p-1 rounded hover:bg-muted transition-colors"
-                title="Open in Explorer"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </button>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Format: </span>
-              <span className="text-foreground">{font.format}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Size: </span>
-              <span className="text-foreground">
-                {formatFileSize(font.file_size)}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Weight: </span>
-              <span className="text-foreground">{font.weight}</span>
-            </div>
-            {font.is_variable && (
-              <div>
-                <span className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-xs">
-                  Variable Font
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
+        <Section title={t("info.fileInfo")}>
+          <Row label={t("info.path")}>
+            <span className="break-all">{font.path}</span>
+            <button
+              type="button"
+              title={t("info.openInExplorer")}
+              onClick={() => openInExplorer(font.path).catch(() => {})}
+              className="ml-1 inline-flex align-middle p-0.5 rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+            </button>
+          </Row>
+          <Row label={t("info.format")}>{font.format}</Row>
+          <Row label={t("info.size")}>{formatFileSize(font.file_size)}</Row>
+          <Row label={t("info.weight")}>{formatFontWeight(font.weight)}</Row>
+          {font.is_variable && <Row label={t("info.variableFont")}>{t("info.yes")}</Row>}
+        </Section>
 
-        {/* Name Table 信息 */}
-        {metadataEntries.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Name Table
-            </h3>
-            <div className="text-sm space-y-2">
-              {metadataEntries.map((entry, idx) => (
-                <div key={idx}>
-                  <span className="text-muted-foreground">{entry.label}: </span>
-                  <span className="text-foreground break-words">
-                    {entry.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 语言支持 */}
         {font.languages.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Info className="w-4 h-4" />
-              Languages
-            </h3>
-            <div className="flex flex-wrap gap-1">
-              {font.languages.map((lang) => (
-                <span
-                  key={lang}
-                  className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground"
-                >
-                  {lang}
-                </span>
-              ))}
-            </div>
-          </div>
+          <Section title={t("info.languages")}>
+            <Chips values={font.languages.map((language) => valueLabel(t, "language", language))} />
+          </Section>
         )}
 
-        {/* Scripts */}
+        {metadata.length > 0 && (
+          <Section title={t("info.nameTable")}>
+            {metadata.map((entry) => (
+              <Row key={entry.label} label={entry.label}>
+                <span className="break-words">{entry.value}</span>
+              </Row>
+            ))}
+          </Section>
+        )}
+
         {font.scripts.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-foreground">Scripts</h3>
-            <div className="flex flex-wrap gap-1">
-              {font.scripts.map((script) => (
-                <span
-                  key={script}
-                  className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
-                >
-                  {script}
-                </span>
-              ))}
-            </div>
-          </div>
+          <Section title={t("info.scripts")}>
+            <Chips values={font.scripts} />
+          </Section>
         )}
       </div>
+    </aside>
+  );
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section>
+      <h3 className="mb-1.5 text-[11px] font-semibold text-muted-foreground">{title}</h3>
+      <dl className="space-y-1">{children}</dl>
+    </section>
+  );
+}
+
+function Row({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[72px_minmax(0,1fr)] gap-2">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="min-w-0">{children}</dd>
+    </div>
+  );
+}
+
+function Chips({ values }: { values: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {values.map((value) => (
+        <span key={value} className="px-1.5 py-0.5 rounded bg-muted text-[11px]">
+          {value}
+        </span>
+      ))}
     </div>
   );
 }

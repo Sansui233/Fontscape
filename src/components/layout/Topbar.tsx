@@ -1,216 +1,159 @@
-import { debounceWithCallbackRef } from "@/lib/utils";
+import { FilterButton } from "@/components/filter/FilterButton";
+import { SETTINGS_SHORTCUT } from "@/components/settings/SettingsDialog";
+import { useFilteredFamilies } from "@/hooks/useFilteredFamilies";
+import { useI18n } from "@/i18n";
+import { filterLabel } from "@/lib/filter-labels";
+import { hasCriteria } from "@/lib/font-filter";
+import { useFontNames } from "@/lib/font-names";
+import { cn } from "@/lib/utils";
+import { useFilterStore } from "@/store/filterStore";
+import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Grid3x3,
-  List,
-  Search,
-  Settings,
-  Type,
-} from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft, Grid3x3, List, PanelLeft, Settings } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { PreviewField, SearchField } from "./TopbarFields";
+import { WindowControls } from "./WindowControls";
 
+/**
+ * 单行统一标题栏，位于灰色窗口外框上：
+ * 位置（返回 + 标题）→ 找字体（搜索、筛选）→ 看字体（预览、视图）→ 窗口按钮
+ */
 export function Topbar() {
-  const { viewMode, setViewMode, previewText, setPreviewText } = useUIStore();
-  const store = useUIStore();
+  const toggleSidebar = useUIStore((state) => state.toggleSidebar);
+  const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
+  const setSettingsOpen = useUIStore((state) => state.setSettingsOpen);
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
-  const appName = "Fontscape";
   const [canGoBack, setCanGoBack] = useState(false);
-  const [canGoForward, setCanGoForward] = useState(false);
 
-  // Track navigation state
   useEffect(() => {
-    // Check if we can go back/forward
     setCanGoBack(window.history.state?.idx > 0);
-    // Forward detection is tricky, we'll assume false for now
-    // React Router doesn't expose forward history easily
-    setCanGoForward(false);
   }, [location]);
 
-  const debouncedSetSearch = useRef(
-    debounceWithCallbackRef((text: string) => {
-      store.setFilters({
-        languages: store.filters.languages,
-        tags: store.filters.tags,
-        searchText: text,
-      });
-    }, 300)
-  ).current;
-
-  const debouncedSetPreview = useRef(
-    debounceWithCallbackRef((text: string) => {
-      setPreviewText(text);
-    }, 500)
-  ).current;
-
-  // 保证 callback 永远最新
-  useEffect(() => {
-    debouncedSetSearch.callbackRef.current = (text: string) => {
-      store.setFilters({
-        languages: store.filters.languages,
-        tags: store.filters.tags,
-        searchText: text,
-      });
-    };
-
-    debouncedSetPreview.callbackRef.current = (text: string) => {
-      setPreviewText(text);
-    };
-  });
-
-  const handleSearchInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const searchText = e.currentTarget.value;
-      debouncedSetSearch(searchText);
-    },
-    []
-  );
-
-  const handlePreviewInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const previewText = e.currentTarget.value;
-      debouncedSetPreview(previewText);
-    },
-    []
-  );
-
-  const handleSearchKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
-        // Execute search immediately on Enter
-        const searchText = e.currentTarget.value;
-        store.setFilters({
-          languages: store.filters.languages,
-          tags: store.filters.tags,
-          searchText,
-        });
-      }
-    },
-    [store.filters]
-  );
-
-  const handlePreviewKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
-        // Update preview immediately on Enter
-        const text = e.currentTarget.value;
-        setPreviewText(text);
-      }
-    },
-    [setPreviewText]
-  );
+  const isList = location.pathname === "/list";
+  const isBrowsing = location.pathname === "/" || isList;
 
   return (
-    <header className="h-16 border-b border-border bg-background px-6 flex items-center justify-between gap-4">
-      {/* Logo and title */}
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-sm">FM</span>
-        </div>
-        <h1 className="text-lg font-semibold">{appName}</h1>
-      </div>
+    <header data-tauri-drag-region className="h-12 shrink-0 flex items-center gap-2 pl-2">
+      {sidebarCollapsed && (
+        <IconButton title={t("nav.showSidebar")} onClick={toggleSidebar}>
+          <PanelLeft className="h-4 w-4" />
+        </IconButton>
+      )}
+      <IconButton title={t("nav.back")} onClick={() => navigate(-1)} disabled={!canGoBack}>
+        <ArrowLeft className="h-4 w-4" />
+      </IconButton>
 
-      {/* Search and Preview inputs */}
-      <div className="flex-1 flex items-center gap-4 max-w-3xl">
-        {/* Navigation arrows */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => canGoBack && navigate(-1)}
-            disabled={!canGoBack}
-            className={`p-2 rounded-lg transition-colors ${
-              canGoBack
-                ? "hover:bg-muted cursor-pointer"
-                : "text-muted-foreground-2 cursor-not-allowed"
-            }`}
-            title="Go back"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => canGoForward && navigate(1)}
-            disabled={!canGoForward}
-            className={`p-2 rounded-lg transition-colors ${
-              canGoForward
-                ? "hover:bg-muted cursor-pointer"
-                : "text-muted-foreground-2 cursor-not-allowed"
-            }`}
-            title="Go forward"
-          >
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
+      <PageTitle />
 
-        {/* Search bar */}
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search fonts..."
-            onChange={handleSearchInput}
-            onKeyDown={handleSearchKeyDown}
-            className="w-full h-10 pl-10 pr-4 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
+      {/* 空白处用于拖动窗口 */}
+      <div data-tauri-drag-region className="flex-1 self-stretch min-w-4" />
 
-        {/* Preview text input */}
-        <div className="flex-1 relative">
-          <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Preview text..."
-            defaultValue={previewText}
-            onChange={handlePreviewInput}
-            onKeyDown={handlePreviewKeyDown}
-            className="w-full h-10 pl-10 pr-4 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-      </div>
+      {isBrowsing && (
+        <>
+          <SearchField />
+          <FilterButton />
+          <PreviewField view={isList ? "list" : "grid"} />
+        </>
+      )}
 
-      {/* Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        {/* View mode toggle */}
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
-          <button
-            onClick={() => {
-              setViewMode("grid");
-              if (location.pathname !== "/") navigate("/");
-            }}
-            className={`p-2 rounded transition-colors ${
-              viewMode === "grid"
-                ? "bg-background shadow-sm"
-                : "hover:bg-background/50"
-            }`}
-            title="Grid view"
-          >
-            <Grid3x3 className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => {
-              setViewMode("list");
-              if (location.pathname !== "/list") navigate("/list");
-            }}
-            className={`p-2 rounded transition-colors ${
-              viewMode === "list"
-                ? "bg-background shadow-sm"
-                : "hover:bg-background/50"
-            }`}
-            title="List view"
-          >
-            <List className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Settings */}
-        <button
-          className="p-2 rounded-lg hover:bg-muted transition-colors"
-          title="Settings"
+      <div className="flex items-center p-0.5 rounded-md bg-foreground/[0.06]">
+        <SegmentButton
+          title={t("view.grid")}
+          active={!isList}
+          onClick={() => location.pathname !== "/" && navigate("/")}
         >
-          <Settings className="h-5 w-5" />
-        </button>
+          <Grid3x3 className="h-4 w-4" />
+        </SegmentButton>
+        <SegmentButton
+          title={t("view.list")}
+          active={isList}
+          onClick={() => !isList && navigate("/list")}
+        >
+          <List className="h-4 w-4" />
+        </SegmentButton>
       </div>
+
+      <IconButton title={t("settings.tooltip", SETTINGS_SHORTCUT)} onClick={() => setSettingsOpen(true)}>
+        <Settings className="h-4 w-4" />
+      </IconButton>
+
+      <WindowControls />
     </header>
+  );
+}
+
+/** 浏览时显示当前 Filter 名称和数量；详情页显示字体家族名 */
+function PageTitle() {
+  const location = useLocation();
+  const families = useFilteredFamilies();
+  const criteria = useFilterStore((state) => state.criteria);
+  const activeFilter = useFilterStore((state) =>
+    state.filters.find((filter) => filter.id === state.activeFilterId)
+  );
+  const fontState = useFontStore((state) => state.fontState);
+  const getFontById = useFontStore((state) => state.getFontById);
+  const { familyName } = useFontNames();
+  const { t } = useI18n();
+
+  let title: string;
+  let count: number | null = null;
+
+  if (location.pathname.startsWith("/family/")) {
+    const name = decodeURIComponent(location.pathname.slice("/family/".length));
+    const family = fontState?.css_font_families.find((item) => item.name === name);
+    const font = family && getFontById(family.default_font_id);
+    title = font ? familyName(font) : name;
+  } else {
+    title = activeFilter
+      ? filterLabel(t, activeFilter)
+      : hasCriteria(criteria)
+        ? t("nav.filtered")
+        : t("nav.allFonts");
+    count = families.length;
+  }
+
+  return (
+    <div data-tauri-drag-region className="flex items-baseline gap-2 min-w-0 pl-1">
+      <h1 data-tauri-drag-region className="truncate text-[14px] font-semibold">
+        {title}
+      </h1>
+      {count !== null && (
+        <span data-tauri-drag-region className="text-[12px] tabular-nums text-muted-foreground">
+          {count}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function IconButton({ className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+function SegmentButton({
+  active,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { active: boolean }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "w-8 h-7 flex items-center justify-center rounded-[5px] transition-colors",
+        active ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+      )}
+      {...props}
+    />
   );
 }

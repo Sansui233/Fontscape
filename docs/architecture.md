@@ -17,9 +17,14 @@ React 组件 → Zustand store → src/lib/tauri-api.ts (invoke)
 | `toggle_font` | `toggleFont` | ❌ 空实现 |
 | `check_glyphs_in_font` | `checkGlyphsInFont` | ✅ 每次都读整个文件，见 font-parsing.md |
 | `open_in_explorer` | `openInExplorer` | ✅ 仅 Windows |
-| `bootstrap_app`、Filter CRUD、settings 读写 | — | ❌ 后端服务已有，command 还没有 |
+| `bootstrap_app` | `bootstrapApp` | ✅ 一次返回字体、Filter、选项、设置 |
+| `create_filter` / `update_filter` / `delete_filter` | 同名 | ✅ 失败时返回 `{code, message}` |
+| `save_ui_state` / `save_preferences` | 同名 | ✅ 由 `lib/settings-sync.ts` 防抖调用 |
+| `get_app_info` / `reset_database` | 同名 | ✅ 设置页使用；重建时先备份原文件 |
+| `move_filter` / `create_folder` / `rename_folder` / `move_folder` / `delete_folder` | 同名 | ✅ 文件夹树；`delete_folder` 返回随之删除的筛选 ID |
+| `show_snap_layouts` | — | ✅ 仅 Windows，模拟 Win+Z |
 
-在 `main.rs` 的 setup 阶段会初始化 `AppServices`（打开数据库、执行 migration），然后交给 `app.manage` 托管。目前还没有 command 用到它。
+`main.rs` 的 setup 阶段创建 `AppState { database_path, services: RwLock<Result<AppServices, String>> }`。数据库打不开时应用照常启动，相关 command 返回 `database_unavailable`。重建数据库后会原地替换 services，不需要重启。
 
 ## 前端
 
@@ -60,7 +65,8 @@ React 组件 → Zustand store → src/lib/tauri-api.ts (invoke)
 | 表 | 用途 | 使用情况 |
 | --- | --- | --- |
 | `schema_migrations` | 已执行的结构升级版本（当前为 v2） | ✅ |
-| `saved_filters` | Filter，`group_name` 为 `language` 或 `saved`，条件存 JSON | ✅ service 已实现 |
+| `saved_filters` | Filter，`group_name` 为 `language` 或 `saved`，条件存 JSON，`folder_id` 指向文件夹 | ✅ |
+| `filter_folders` | 「已存筛选」中的文件夹，`parent_id` 实现嵌套（v3） | ✅ |
 | `app_settings` | 按 `namespace`（ui_state / preference）和 `key` 存储 | ❌ 未使用 |
 | `font_file_cache` | 按文件路径缓存解析结果 | ❌ 未使用 |
 

@@ -1,96 +1,72 @@
+import { useFilteredFamilies } from "@/hooks/useFilteredFamilies";
+import { useI18n } from "@/i18n";
+import { hasCriteria } from "@/lib/font-filter";
+import { useFilterStore } from "@/store/filterStore";
 import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
-import { FontState } from "@/types/font";
+import { FontInfo, FontState } from "@/types/font";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { useDebouncedCallback } from "use-debounce";
-import { FontCard } from "./FontCard";
-import { FontToolbar } from "./FontToolbar";
+import { CARD_INFO_HEIGHT, FontCard, previewAreaHeight } from "./FontCard";
+import { FontInfoModal } from "./FontInfoModal";
+import { ContentBar } from "./ContentBar";
 
 interface FontGridProps {
   fontState: FontState;
 }
 
+const MIN_CARD_WIDTH = 220;
+const GAP = 12;
+const PADDING_X = 16;
+
 // 存储滚动位置
 const scrollPositions = new Map<string, number>();
 
 export function FontGrid({ fontState }: FontGridProps) {
-  const uiStore = useUIStore();
-  const fontStore = useFontStore();
+  const getFontById = useFontStore((state) => state.getFontById);
+  const criteria = useFilterStore((state) => state.criteria);
+  const clearCriteria = useFilterStore((state) => state.clearCriteria);
+  const previewSize = useUIStore((state) => state.previewSize);
+
   const parentRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(3);
   const location = useLocation();
   const [isRestored, setIsRestored] = useState(false);
+  const [infoFont, setInfoFont] = useState<FontInfo | null>(null);
+  const showInfo = useCallback((font: FontInfo) => setInfoFont(font), []);
+  const { t } = useI18n();
 
-  const filtered_font_families = useMemo(() => {
-    const filters = uiStore.filters ?? {};
-    const langFilters = Array.isArray(filters.languages)
-      ? filters.languages
-      : [];
-    const searchText = filters.searchText?.toLowerCase().trim() || "";
-    // const tagFilters = Array.isArray(filters.tags) ? filters.tags : [];
+  const families = useFilteredFamilies();
 
-    return fontState.css_font_families.filter((fm) => {
-      const font = fontStore.getFontById(fm.default_font_id);
-      if (!font) return false;
+  const rowCount = Math.ceil(families.length / columns);
+  const rowHeight = previewAreaHeight(previewSize) + CARD_INFO_HEIGHT + 2 + GAP;
 
-      // 如果没有语言过滤，则不过滤语言；否则要求字体包含所有选中的语言
-      if (
-        langFilters.length > 0 &&
-        !langFilters.every((l) => font.languages.includes(l))
-      ) {
-        return false;
-      }
-      // TODO 如果有标签过滤，要求字体包含所有选中的标签
-      // if (tagFilters.length > 0 && !tagFilters.every((t) => (font.tags ?? []).includes(t))) {
-      //   return false;
-      // }
-
-      // Search filter: check if searchText is included in family, full_name, family_zh, or full_name_zh
-      if (searchText) {
-        const family = font.family?.toLowerCase() || "";
-        const fullName = font.full_name?.toLowerCase() || "";
-        const familyZh = font.family_zh?.toLowerCase() || "";
-        const fullNameZh = font.full_name_zh?.toLowerCase() || "";
-
-        const matchesSearch =
-          family.includes(searchText) ||
-          fullName.includes(searchText) ||
-          familyZh.includes(searchText) ||
-          fullNameZh.includes(searchText);
-
-        if (!matchesSearch) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [uiStore.filters, fontState]);
-
-  // Calculate number of rows based on columns
-  const rowCount = Math.ceil(filtered_font_families.length / columns);
-
-  // Create virtualizer for rows
   const rowVirtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 200, // Estimated card height + gap
-    overscan: 2, // Render 2 extra rows above and below viewport
+    estimateSize: () => rowHeight,
+    overscan: 2,
     initialOffset: scrollPositions.get(location.key) || 0,
   });
 
-  // Scroll Upward 预防抖动
+  // 卡片高度只由字号决定，字号变化时重新测量
   useEffect(() => {
-    rowVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = () => {
-      // return item.index < (instance.getVirtualItems()[0]?.index ?? 0);
-      if (isRestored) {
-        return false;
-      }
-      return true;
-    };
-  }, [isRestored, rowVirtualizer]);
+    rowVirtualizer.measure();
+  }, [rowHeight, columns, rowVirtualizer]);
+
+  // 按容器宽度计算列数，侧栏收起或窗口缩放时自动调整
+  useLayoutEffect(() => {
+    const element = parentRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width - PADDING_X * 2;
+      setColumns(Math.max(1, Math.floor((width + GAP) / (MIN_CARD_WIDTH + GAP))));
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   // Scroll restoration 预防抖动, 监听 virtualizer.isScrolling 来判断何时完成
   useLayoutEffect(() => {
@@ -105,119 +81,100 @@ export function FontGrid({ fontState }: FontGridProps) {
     };
 
     const savedPosition = scrollPositions.get(location.key);
-
-    if (parentRef.current && savedPosition === parentRef.current.scrollTop) {
-      // The position is already correct
-      // but virtualizer may still in scrolling
-      requestAnimationFrame(checkScrolling);
-      return;
+    if (savedPosition !== parentRef.current.scrollTop) {
+      parentRef.current.scrollTop = savedPosition ?? 0;
     }
-
-    console.debug("Fallback: Restoring scroll position to", savedPosition);
-    parentRef.current.scrollTop = savedPosition ?? 0;
     requestAnimationFrame(checkScrolling);
   }, [location.key, rowVirtualizer]);
 
-  // Debounced 保存滚动位置
   const saveScrollPosition = useDebouncedCallback(() => {
     if (parentRef.current) {
       scrollPositions.set(location.key, parentRef.current.scrollTop);
     }
   }, 100);
 
-  // 监听滚动事件
   useEffect(() => {
     const element = parentRef.current;
     if (!element) return;
-
     element.addEventListener("scroll", saveScrollPosition);
     return () => element.removeEventListener("scroll", saveScrollPosition);
   }, [location.key, saveScrollPosition]);
 
-  // Update columns based on window width (matching Tailwind breakpoints)
-  useEffect(() => {
-    const updateColumns = () => {
-      const width = window.innerWidth;
-
-      // Tailwind breakpoints: sm:640px, lg:1024px
-      if (width < 640) {
-        setColumns(1);
-      } else if (width < 1024) {
-        setColumns(2);
-      } else {
-        setColumns(3);
-      }
-    };
-
-    updateColumns();
-    window.addEventListener("resize", updateColumns);
-    return () => window.removeEventListener("resize", updateColumns);
-  }, []);
-
-  if (!fontState) {
-    return null;
-  }
-
-  if (fontState.fonts.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">No fonts found</p>
-      </div>
-    );
-  }
-
-  if (filtered_font_families.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">No fonts match your filters</p>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-full">
-      <FontToolbar />
-      <div ref={parentRef} className="flex-1 min-h-0 overflow-auto">
-        <div
-          style={{
-            height: `${rowVirtualizer.getTotalSize()}px`,
-            width: "100%",
-            position: "relative",
-            opacity: isRestored ? 1 : 0,
-            transition: "opacity 200ms ease-in",
-          }}
-        >
-          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-            const startIdx = virtualRow.index * columns;
-            const rowFontFamilies = filtered_font_families.slice(
-              startIdx,
-              startIdx + columns
-            );
+      <ContentBar />
 
-            return (
-              <div
-                key={virtualRow.key}
-                data-index={virtualRow.index}
-                ref={rowVirtualizer.measureElement}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  transform: `translateY(${virtualRow.start}px)`,
-                  paddingTop: "1.5rem",
-                }}
-              >
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 px-6">
-                  {rowFontFamilies.map((fm) => (
-                    <FontCard key={fm.name} fontFamily={fm} />
-                  ))}
+      <div ref={parentRef} className="flex-1 min-h-0 overflow-auto">
+        {families.length === 0 ? (
+          <EmptyState
+            message={fontState.fonts.length === 0 ? t("empty.noFonts") : t("empty.noMatches")}
+            onClear={hasCriteria(criteria) ? clearCriteria : undefined}
+          />
+        ) : (
+          <div
+            style={{
+              height: rowVirtualizer.getTotalSize() + GAP,
+              width: "100%",
+              position: "relative",
+              opacity: isRestored ? 1 : 0,
+              transition: "opacity 200ms ease-in",
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const startIdx = virtualRow.index * columns;
+              const rowFamilies = families.slice(startIdx, startIdx + columns);
+
+              return (
+                <div
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualRow.start}px)`,
+                    padding: `${GAP}px ${PADDING_X}px 0`,
+                  }}
+                >
+                  <div
+                    className="grid"
+                    style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: GAP }}
+                  >
+                    {rowFamilies.map((family) => {
+                      const font = getFontById(family.default_font_id);
+                      return font ? (
+                        <FontCard key={family.name} fontFamily={family} font={font} onShowInfo={showInfo} />
+                      ) : null;
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {infoFont && <FontInfoModal font={infoFont} onClose={() => setInfoFont(null)} />}
+    </div>
+  );
+}
+
+export function EmptyState({ message, onClear }: { message: string; onClear?: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div className="h-64 flex flex-col items-center justify-center gap-3">
+      <p className="text-[13px] text-muted-foreground">{message}</p>
+      {onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="h-7 px-3 rounded-md border border-border text-[13px] hover:bg-muted"
+        >
+          {t("filter.clearFilter")}
+        </button>
+      )}
     </div>
   );
 }

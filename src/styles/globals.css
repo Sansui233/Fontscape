@@ -23,6 +23,13 @@
     --input: 0 0% 89.8%;
     --ring: 0 0% 3.9%;
     --radius: 0.5rem;
+    /* 强调色：筛选生效、选中等状态。accent 是灰色背景，不能复用 */
+    --brand: 211 100% 50%;
+    --brand-foreground: 0 0% 100%;
+    /* macOS 风格侧栏 */
+    --sidebar: 0 0% 96.5%;
+    --sidebar-hover: 0 0% 0% / 0.045;
+    --sidebar-active: 0 0% 0% / 0.08;
   }
 
   .dark {
@@ -46,6 +53,11 @@
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
+    --brand: 211 100% 58%;
+    --brand-foreground: 0 0% 100%;
+    --sidebar: 0 0% 7%;
+    --sidebar-hover: 0 0% 100% / 0.05;
+    --sidebar-active: 0 0% 100% / 0.1;
   }
 }
 
@@ -79,6 +91,12 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 
+  --color-brand: hsl(var(--brand));
+  --color-brand-foreground: hsl(var(--brand-foreground));
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-hover: hsl(var(--sidebar-hover));
+  --color-sidebar-active: hsl(var(--sidebar-active));
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -106,17 +124,39 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: hsl(0 0% 90%);
+    background: hsl(var(--border));
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(0 0% 80%);
+    background: hsl(var(--muted-foreground) / 0.5);
   }
 
   /* Firefox scrollbar */
   * {
     scrollbar-width: thin;
-    scrollbar-color: hsl(0 0% 90%) transparent;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+}
+
+/* 进入字体详情页：淡入并轻微上移 */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.page-enter {
+  animation: page-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter {
+    animation: none;
   }
 }

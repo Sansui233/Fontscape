@@ -1,345 +1,257 @@
 import { FontInfoModal } from "@/components/font/FontInfoModal";
 import { RightSidebar } from "@/components/layout/RightSidebar";
+import { FamilyTags } from "@/components/tags/FamilyTags";
 import { ContextMenu } from "@/components/ui/ContextMenu";
+import { useI18n, valueLabel } from "@/i18n";
+import { useFontNames } from "@/lib/font-names";
+import { cn } from "@/lib/utils";
 import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
 import { FontInfo } from "@/types/font";
-import { ArrowLeft, Info, Italic } from "lucide-react";
+import { Info, Italic } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useParams } from "react-router";
 import "./FontFamilyPage.css";
 
-// 预览文本模板
+// 预览文本模板，按字体支持的字符集选用
 const PREVIEW_TEXTS = {
-  lorem: "The quick brown fox jumps over the lazy dog. 0123456789",
+  latin: "The quick brown fox jumps over the lazy dog. 0123456789",
   simplifiedChinese: "天地玄黄，宇宙洪荒。日月盈昃，辰宿列张。",
   traditionalChinese: "落霞與孤鶩齊飛，秋水共長天一色。",
   japanese: "いろはにほへと ちりぬるを わかよたれそ",
   korean: "다람쥐 헌 쳇바퀴에 타고파",
-  numbers: "0123456789 !@#$%^&*()",
 };
 
-export function FontFamilyPage() {
-  const { familyName } = useParams<{ familyName: string }>();
-  const navigate = useNavigate();
-  const {
-    language,
-    detailPreviewFontSize,
-    detailPreviewFontWeight,
-    detailPreviewItalic,
-    setDetailPreviewFontSize,
-    setDetailPreviewFontWeight,
-    setDetailPreviewItalic,
-  } = useUIStore();
-  const { getFontsByCssFamily, fontState } = useFontStore();
+function previewTexts(font: FontInfo): string[] {
+  const texts = [PREVIEW_TEXTS.latin];
+  if (font.charsets.includes("Hans")) texts.push(PREVIEW_TEXTS.simplifiedChinese);
+  if (font.charsets.includes("Hant")) texts.push(PREVIEW_TEXTS.traditionalChinese);
+  if (font.charsets.includes("Jpan")) texts.push(PREVIEW_TEXTS.japanese);
+  if (font.charsets.includes("Kore")) texts.push(PREVIEW_TEXTS.korean);
+  return texts;
+}
 
-  // 页面内部选中的字体（用于预览和右侧栏）
+export function FontFamilyPage() {
+  const { familyName = "" } = useParams<{ familyName: string }>();
+  const name = decodeURIComponent(familyName);
+  const { t } = useI18n();
+  const { familyName: displayName } = useFontNames();
+  const fontSize = useUIStore((state) => state.detailPreviewFontSize);
+  const fontWeight = useUIStore((state) => state.detailPreviewFontWeight);
+  const italic = useUIStore((state) => state.detailPreviewItalic);
+  const setFontSize = useUIStore((state) => state.setDetailPreviewFontSize);
+  const setFontWeight = useUIStore((state) => state.setDetailPreviewFontWeight);
+  const setItalic = useUIStore((state) => state.setDetailPreviewItalic);
+  const rightSidebarWidth = useUIStore((state) => state.rightSidebarWidth);
+  const fontState = useFontStore((state) => state.fontState);
+  const getFontsByCssFamily = useFontStore((state) => state.getFontsByCssFamily);
+
+  // 页面内选中的成员（用于预览和右侧栏）；切换家族时重置
   const [selectedFont, setSelectedFont] = useState<FontInfo | null>(null);
-  // 右键菜单状态
-  const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-    font: FontInfo;
-  } | null>(null);
-  // 详情 Modal
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; font: FontInfo } | null>(null);
   const [infoFont, setInfoFont] = useState<FontInfo | null>(null);
 
-  // 获取该 family 下的所有字体
-  const familyFonts = familyName
-    ? getFontsByCssFamily(decodeURIComponent(familyName))
-    : [];
+  useEffect(() => setSelectedFont(null), [name]);
 
-  // 找到对应的 CssFontFamily
-  const cssFontFamily = fontState?.css_font_families.find(
-    (f) => f.name === decodeURIComponent(familyName || "")
-  );
+  const familyFonts = getFontsByCssFamily(name).sort((a, b) => a.weight - b.weight);
+  const family = fontState?.css_font_families.find((item) => item.name === name);
+  const defaultFont = familyFonts.find((font) => font.id === family?.default_font_id) ?? familyFonts[0];
+  const font = selectedFont ?? defaultFont;
 
-  // 默认字体
-  const defaultFont =
-    familyFonts.find((f) => f.id === cssFontFamily?.default_font_id) ||
-    familyFonts[0];
-
-  // 当前预览用的字体
-  const previewFont = selectedFont || defaultFont;
-
-  // 当 familyName 变化时，重置选中字体
-  useEffect(() => {
-    if (defaultFont) {
-      setSelectedFont(null);
-    }
-  }, [familyName]);
-
-  // 处理字体选择
-  const handleFontSelect = (font: FontInfo) => {
-    setSelectedFont(font);
-  };
-
-  // 右键菜单处理
-  const handleContextMenu = (e: React.MouseEvent, font: FontInfo) => {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, font });
-  };
-
-  // 获取显示名称
-  const getDisplayName = (font: FontInfo) => {
-    return language === "zh-CN" && font.family_zh
-      ? font.family_zh
-      : font.family;
-  };
-
-  // 根据字体支持的字符集获取预览文本
-  const getPreviewTexts = (font: FontInfo | null) => {
-    if (!font) return [PREVIEW_TEXTS.lorem];
-
-    const texts = [PREVIEW_TEXTS.lorem];
-
-    if (font.charsets.includes("Hans")) {
-      texts.push(PREVIEW_TEXTS.simplifiedChinese);
-    }
-    if (font.charsets.includes("Hant")) {
-      texts.push(PREVIEW_TEXTS.traditionalChinese);
-    }
-    if (font.charsets.includes("Jpan")) {
-      texts.push(PREVIEW_TEXTS.japanese);
-    }
-    if (font.charsets.includes("Kore")) {
-      texts.push(PREVIEW_TEXTS.korean);
-    }
-
-    return texts;
-  };
-
-  // 右键菜单项
-  const menuItems = contextMenu
-    ? [
-        {
-          label: "Info",
-          icon: <Info className="w-4 h-4" />,
-          onClick: () => {
-            setInfoFont(contextMenu.font);
-          },
-        },
-      ]
-    : [];
-
-  if (!previewFont || familyFonts.length === 0) {
+  if (!font) {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Font family not found</p>
+        <p className="text-[13px] text-muted-foreground">{t("detail.notFound")}</p>
       </div>
     );
   }
 
-  // 右侧栏显示的字体
-  const displayFont = selectedFont || defaultFont;
-  const { rightSidebarWidth } = useUIStore();
+  const title = displayName(font);
+  const meta = [
+    t("card.styles", familyFonts.length),
+    font.category && font.category !== "Unknown" ? valueLabel(t, "category", font.category) : null,
+    font.languages.map((language) => valueLabel(t, "language", language)).join(", "),
+  ].filter(Boolean);
 
   return (
     <>
-      {/* 覆盖层 - 覆盖在 main 区域 */}
-      <div className="absolute inset-0 flex bg-background overflow-hidden">
-        {/* 主内容区 - 为右侧栏留出空间 */}
-        <div
-          className="flex-1 overflow-auto p-8"
-          style={{ marginRight: `${rightSidebarWidth}px` }}
-        >
-          <div className="max-w-4xl mx-auto">
-            {/* 头部 */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => navigate(-1)}
-                  className="p-2 rounded-lg hover:bg-muted transition-colors"
-                  title="Back to grid"
-                >
-                  <ArrowLeft className="w-6 h-6" />
-                </button>
-                <h2 className="text-2xl font-bold text-foreground">
-                  {getDisplayName(previewFont)}
-                </h2>
+      <div className="page-enter absolute inset-0 flex bg-background overflow-hidden">
+        <div className="flex-1 overflow-auto" style={{ marginRight: rightSidebarWidth }}>
+          <div className="max-w-4xl mx-auto px-6 py-5 space-y-6">
+            <header className="space-y-2">
+              <div>
+                <h2 className="text-[20px] font-semibold leading-tight">{title}</h2>
+                <p className="mt-0.5 text-[12px] text-muted-foreground">{meta.join(" · ")}</p>
               </div>
-            </div>
+              <FamilyTags family={name} title={title} />
+            </header>
 
-            {/* 预览区域 */}
-            <div className="bg-card rounded-lg border border-border p-6 mb-8">
-              <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Preview
-                </h3>
-                <div className="flex items-center gap-4 min-w-0 flex-shrink">
-                  {/* 字体大小滑块 */}
-                  <div className="flex items-center gap-2 min-w-0">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
-                      Size:
-                    </label>
-                    <input
-                      type="range"
-                      min="8"
-                      max="48"
-                      step="2"
-                      value={detailPreviewFontSize}
-                      onChange={(e) =>
-                        setDetailPreviewFontSize(Number(e.target.value))
-                      }
-                      onInput={(e) => {
-                        const target = e.target as HTMLInputElement;
-                        const percent = ((Number(target.value) - 8) / (48 - 8)) * 100;
-                        target.style.setProperty('--slider-progress', `${percent}%`);
-                      }}
-                      style={{
-                        '--slider-progress': `${((detailPreviewFontSize - 8) / (48 - 8)) * 100}%`
-                      } as React.CSSProperties}
-                      className="minimal-slider w-24"
-                    />
-                    <input
-                      type="number"
-                      min="12"
-                      max="96"
-                      value={detailPreviewFontSize}
-                      onChange={(e) =>
-                        setDetailPreviewFontSize(Number(e.target.value))
-                      }
-                      className="w-14 px-2 py-1 text-xs border border-border rounded bg-background"
-                    />
-                  </div>
-                  {/* 字重滑块 */}
-                  <div className="flex items-center gap-2 min-w-0">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
-                      Weight:
-                    </label>
-                    <input
-                      type="range"
-                      min="100"
-                      max="900"
-                      step="100"
-                      value={detailPreviewFontWeight}
-                      onChange={(e) =>
-                        setDetailPreviewFontWeight(Number(e.target.value))
-                      }
-                      onInput={(e) => {
-                        const target = e.target as HTMLInputElement;
-                        const percent = ((Number(target.value) - 100) / (900 - 100)) * 100;
-                        target.style.setProperty('--slider-progress', `${percent}%`);
-                      }}
-                      style={{
-                        '--slider-progress': `${((detailPreviewFontWeight - 100) / (900 - 100)) * 100}%`
-                      } as React.CSSProperties}
-                      className="minimal-slider w-24"
-                    />
-                    <input
-                      type="number"
-                      min="100"
-                      max="900"
-                      step="100"
-                      value={detailPreviewFontWeight}
-                      onChange={(e) =>
-                        setDetailPreviewFontWeight(Number(e.target.value))
-                      }
-                      className="w-14 px-2 py-1 text-xs border border-border rounded bg-background"
-                    />
-                  </div>
-                  {/* 斜体切换 */}
-                  <button
-                    onClick={() => setDetailPreviewItalic(!detailPreviewItalic)}
-                    className={`p-2 rounded transition-colors ${
-                      detailPreviewItalic
-                        ? "bg-foreground text-background"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                    title="Toggle italic"
-                  >
-                    <Italic className="w-4 h-4" />
-                  </button>
-                </div>
+            <section>
+              <div className="h-8 mb-1.5 flex items-center gap-4">
+                <h3 className="flex-1 text-[11px] font-semibold text-muted-foreground">{t("detail.preview")}</h3>
+                <InlineSlider label={t("preview.size")} value={fontSize} min={12} max={96} onChange={setFontSize} />
+                <InlineSlider
+                  label={t("preview.weight")}
+                  value={fontWeight}
+                  min={100}
+                  max={900}
+                  step={100}
+                  onChange={setFontWeight}
+                />
+                <button
+                  type="button"
+                  onClick={() => setItalic(!italic)}
+                  title={t("detail.toggleItalic")}
+                  className={cn(
+                    "w-7 h-7 flex items-center justify-center rounded-md transition-colors",
+                    italic ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <Italic className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <div className="space-y-3">
-                {getPreviewTexts(previewFont).map((text, idx) => (
+              <div className="rounded-lg border border-border divide-y divide-border">
+                {previewTexts(font).map((text) => (
                   <div
-                    key={idx}
-                    contentEditable={true}
-                    suppressContentEditableWarning={true}
-                    className="leading-relaxed outline-none focus:ring-2 focus:ring-primary/20 rounded px-2 py-1"
+                    key={text}
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="px-4 py-3 leading-snug outline-none focus:bg-muted/30"
                     style={{
-                      fontFamily: `"${previewFont.css_font_family}", sans-serif`,
-                      fontSize: `${detailPreviewFontSize}px`,
-                      fontWeight: detailPreviewFontWeight,
-                      fontStyle: detailPreviewItalic ? "italic" : "normal",
+                      fontFamily: `"${font.css_font_family}", sans-serif`,
+                      fontSize,
+                      fontWeight,
+                      fontStyle: italic ? "italic" : "normal",
                     }}
                   >
                     {text}
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
 
-            {/* 字体家族内的所有字体 */}
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-4">
-                Family Variants ({familyFonts.length})
+            <section>
+              <h3 className="h-8 flex items-center text-[11px] font-semibold text-muted-foreground">
+                {t("detail.variants", familyFonts.length)}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {familyFonts
-                  .sort((a, b) => a.weight - b.weight)
-                  .map((font) => (
-                    <div
-                      key={font.id}
-                      onClick={() => handleFontSelect(font)}
-                      onContextMenu={(e) => handleContextMenu(e, font)}
-                      className={`
-                        p-4 rounded-lg border cursor-pointer transition-all
-                        hover:shadow-md hover:border-primary
-                        ${
-                          selectedFont?.id === font.id
-                            ? "ring-2 ring-primary border-primary bg-primary/5"
-                            : "border-border bg-card"
-                        }
-                      `}
-                    >
-                      {/* 字体预览 */}
-                      <div
-                        className="text-xl mb-2 truncate"
-                        style={{
-                          fontFamily: `"${font.css_font_family}", sans-serif`,
-                          fontWeight: font.weight,
-                          fontStyle: font.style.toLowerCase().includes('italic') ? 'italic' : 'normal',
-                        }}
-                      >
-                        {getDisplayName(font)}
-                      </div>
-                      {/* 字体信息 */}
-                      <div className="text-sm text-muted-foreground">
-                        {font.style} • {font.weight}
-                        {font.is_variable && (
-                          <span className="ml-2 px-1.5 py-0.5 rounded bg-secondary text-xs">
-                            Variable
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
+                {familyFonts.map((member) => (
+                  <MemberCard
+                    key={member.id}
+                    font={member}
+                    name={displayName(member)}
+                    selected={member.id === font.id}
+                    onSelect={() => setSelectedFont(member)}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      setContextMenu({ x: event.clientX, y: event.clientY, font: member });
+                    }}
+                  />
+                ))}
               </div>
-            </div>
+            </section>
           </div>
         </div>
 
-        {/* 右侧栏 */}
-        <RightSidebar font={displayFont ?? null} />
+        <RightSidebar font={font} />
       </div>
 
-      {/* 右键菜单 */}
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
           onClose={() => setContextMenu(null)}
-          items={menuItems}
+          items={[
+            {
+              label: t("menu.info"),
+              icon: <Info />,
+              onClick: () => setInfoFont(contextMenu.font),
+            },
+          ]}
         />
       )}
-
-      {/* 详情 Modal */}
-      {infoFont && (
-        <FontInfoModal font={infoFont} onClose={() => setInfoFont(null)} />
-      )}
+      {infoFont && <FontInfoModal font={infoFont} onClose={() => setInfoFont(null)} />}
     </>
+  );
+}
+
+/** 家族成员卡片：直接用 CSS 字体，缺字由浏览器回退 */
+function MemberCard({
+  font,
+  name,
+  selected,
+  onSelect,
+  onContextMenu,
+}: {
+  font: FontInfo;
+  name: string;
+  selected: boolean;
+  onSelect: () => void;
+  onContextMenu: (event: React.MouseEvent) => void;
+}) {
+  const italic = /italic|oblique/i.test(font.style);
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      onContextMenu={onContextMenu}
+      className={cn(
+        "px-3 py-2.5 rounded-lg border text-left transition-colors",
+        selected ? "border-brand ring-1 ring-brand" : "border-border hover:border-foreground/25"
+      )}
+    >
+      <div
+        className="truncate text-[18px] leading-snug"
+        style={{
+          fontFamily: `"${font.css_font_family}", sans-serif`,
+          fontWeight: font.weight,
+          fontStyle: italic ? "italic" : "normal",
+        }}
+      >
+        {name}
+      </div>
+      <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <span className="truncate">
+          {font.style} · {font.weight}
+        </span>
+        {font.is_variable && (
+          <span className="shrink-0 px-1 rounded text-[10px] font-semibold leading-4 bg-muted">VAR</span>
+        )}
+      </div>
+    </button>
+  );
+}
+
+function InlineSlider({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+      <span className="shrink-0 whitespace-nowrap">{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        style={{ "--slider-progress": `${((value - min) / (max - min)) * 100}%` } as React.CSSProperties}
+        className="minimal-slider w-20"
+      />
+      <span className="w-7 tabular-nums text-foreground">{value}</span>
+    </label>
   );
 }

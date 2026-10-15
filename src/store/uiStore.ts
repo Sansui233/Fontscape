@@ -1,6 +1,5 @@
+import type { FontNameMode, PersistedUIState, Theme, UserPreferences, ViewMode } from "@/types/application";
 import { create } from "zustand";
-
-type ViewMode = "grid" | "list";
 
 interface UIStore {
   viewMode: ViewMode;
@@ -13,6 +12,12 @@ interface UIStore {
   detailPreviewFontWeight: number;
   detailPreviewItalic: boolean;
   rightSidebarWidth: number;
+  /** 界面语言偏好："system" 或具体语言 */
+  language: string;
+  fontNames: FontNameMode;
+  theme: Theme;
+  settingsOpen: boolean;
+  hydrate: (uiState: PersistedUIState, preferences: UserPreferences) => void;
   setViewMode: (mode: ViewMode) => void;
   setPreviewSize: (size: number) => void;
   setPreviewText: (text: string) => void;
@@ -25,18 +30,10 @@ interface UIStore {
   setDetailPreviewFontWeight: (weight: number) => void;
   setDetailPreviewItalic: (italic: boolean) => void;
   setRightSidebarWidth: (width: number) => void;
-  language: string;
   setLanguage: (lang: string) => void;
-  filters: {
-    languages: string[];
-    tags: string[];
-    searchText: string;
-  };
-  setFilters: (filters: {
-    languages: string[];
-    tags: string[];
-    searchText: string;
-  }) => void;
+  setTheme: (theme: Theme) => void;
+  setFontNames: (mode: FontNameMode) => void;
+  setSettingsOpen: (open: boolean) => void;
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -50,16 +47,31 @@ export const useUIStore = create<UIStore>((set) => ({
   detailPreviewFontWeight: 400,
   detailPreviewItalic: false,
   rightSidebarWidth: 320,
+  language: "system",
+  fontNames: "localized",
+  theme: "system",
+  settingsOpen: false,
+  hydrate: (uiState, preferences) =>
+    set({
+      viewMode: uiState.view_mode,
+      sidebarCollapsed: uiState.sidebar_collapsed,
+      previewSize: preferences.preview_size,
+      previewText: preferences.preview_text,
+      detailPreviewFontSize: preferences.detail_preview_font_size,
+      detailPreviewFontWeight: preferences.detail_preview_font_weight,
+      detailPreviewItalic: preferences.detail_preview_italic,
+      rightSidebarWidth: preferences.right_sidebar_width,
+      language: preferences.language,
+      theme: preferences.theme,
+      fontNames: preferences.font_names,
+    }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setPreviewSize: (size) => set({ previewSize: size }),
   setPreviewText: (text) => set({ previewText: text }),
   toggleSidebar: () =>
     set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setMultiSelectMode: (mode) =>
-    set({
-      multiSelectMode: mode,
-      selectedFontIds: mode ? new Set() : new Set(),
-    }),
+    set({ multiSelectMode: mode, selectedFontIds: new Set() }),
   toggleFontSelection: (fontId) =>
     set((state) => {
       const newSet = new Set(state.selectedFontIds);
@@ -77,8 +89,8 @@ export const useUIStore = create<UIStore>((set) => ({
     set({ detailPreviewFontWeight: weight }),
   setDetailPreviewItalic: (italic) => set({ detailPreviewItalic: italic }),
   setRightSidebarWidth: (width) => set({ rightSidebarWidth: width }),
-  language: "zh-CN",
   setLanguage: (lang) => set({ language: lang }),
-  filters: { languages: [], tags: [], searchText: "" },
-  setFilters: (f) => set({ filters: f }),
+  setTheme: (theme) => set({ theme }),
+  setFontNames: (mode) => set({ fontNames: mode }),
+  setSettingsOpen: (open) => set({ settingsOpen: open }),
 }));
