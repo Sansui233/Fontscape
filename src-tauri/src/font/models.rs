@@ -7,6 +7,8 @@ pub struct FontInfo {
     pub full_name: String,       // OpenType Name ID 4 (FULL_NAME)，优先英文
     pub postscript_name: String, // OpenType Name ID 6 (POST_SCRIPT_NAME)
     pub style: String,           // OpenType Name ID 2 (SUBFAMILY)，默认 "Regular"
+    #[serde(default)]
+    pub category: Option<String>, // Serif / Sans Serif 等分类；None 表示尚未分类
     pub path: String,            // 字体文件路径
     pub file_size: u64,          // 由 fs::metadata 获取
     pub format: FontFormat,      // 由文件扩展名判定 (.ttf/.otf/.ttc)

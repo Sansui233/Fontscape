@@ -223,6 +223,7 @@ impl FontScanner {
             full_name,
             postscript_name,
             style,
+            category: None,
             path: path.to_string_lossy().to_string(),
             file_size: metadata.len(),
             format,

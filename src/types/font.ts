@@ -5,6 +5,7 @@ export interface FontInfo {
   full_name: string;
   postscript_name: string;
   style: string;
+  category: string | null; // Serif / Sans Serif 等分类；null 表示尚未分类
   path: string;
   file_size: number;
   format: FontFormat;

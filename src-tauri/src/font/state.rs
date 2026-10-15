@@ -117,6 +117,7 @@ mod tests {
             full_name: format!("{} {}", css_font_family, weight),
             postscript_name: format!("{}-{}", css_font_family, weight),
             style: "Regular".to_string(),
+            category: None,
             path: "/test/path".to_string(),
             file_size: 1000,
             format: FontFormat::TrueType,
