@@ -131,7 +131,7 @@ function ResetDatabaseButton({ onReset }: { onReset: () => void }) {
 }
 
 function FullScreen({ children }: { children: React.ReactNode }) {
-  return <div className="h-screen flex flex-col items-center justify-center bg-background">{children}</div>;
+  return <div className="h-screen flex flex-col items-center justify-center bg-frame">{children}</div>;
 }
 
 export default App;

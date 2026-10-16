@@ -23,7 +23,8 @@
         "fullscreen": false,
         "decorations": false,
         "dragDropEnabled": false,
-        "transparent": false,
+        "transparent": true,
+        "windowEffects": { "effects": ["acrylic"] },
         "hiddenTitle": false
       }
     ],

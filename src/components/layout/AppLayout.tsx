@@ -13,8 +13,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
 
   return (
-    // L 形框架：侧栏与标题栏共用灰色外框，内容是嵌入的白色面板
-    <div className="flex h-screen overflow-hidden relative bg-sidebar">
+    // L 形框架：侧栏与标题栏共用半透明外框（透出 Acrylic），内容是嵌入的白色面板
+    <div className="flex h-screen overflow-hidden relative bg-frame">
       <Sidebar />
 
       <div className="flex-1 min-w-0 flex flex-col">

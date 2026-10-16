@@ -28,6 +28,8 @@
     --brand-foreground: 0 0% 100%;
     /* macOS 风格侧栏 */
     --sidebar: 0 0% 96.5%;
+    /* 外框（侧栏 + 标题栏）半透明，透出 Windows Acrylic 模糊 */
+    --frame: 0 0% 96.5% / 0.6;
     --sidebar-hover: 0 0% 0% / 0.045;
     --sidebar-active: 0 0% 0% / 0.08;
   }
@@ -56,8 +58,17 @@
     --brand: 211 100% 58%;
     --brand-foreground: 0 0% 100%;
     --sidebar: 0 0% 7%;
+    --frame: 0 0% 7% / 0.6;
     --sidebar-hover: 0 0% 100% / 0.05;
     --sidebar-active: 0 0% 100% / 0.1;
+  }
+
+  /* Windows「透明效果」关闭时 Acrylic 不生效，外框改回实色 */
+  @media (prefers-reduced-transparency: reduce) {
+    :root,
+    .dark {
+      --frame: var(--sidebar);
+    }
   }
 }
 
@@ -94,6 +105,7 @@
   --color-brand: hsl(var(--brand));
   --color-brand-foreground: hsl(var(--brand-foreground));
   --color-sidebar: hsl(var(--sidebar));
+  --color-frame: hsl(var(--frame));
   --color-sidebar-hover: hsl(var(--sidebar-hover));
   --color-sidebar-active: hsl(var(--sidebar-active));
 
@@ -109,7 +121,8 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    /* 窗口透明，背景交给外框和内容面板，否则会盖住 Acrylic */
+    @apply bg-transparent text-foreground;
     font-family: "Inter", "Segoe UI Variable", "Microsoft YaHei UI", system-ui, sans-serif;
   }
 
