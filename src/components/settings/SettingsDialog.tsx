@@ -10,7 +10,8 @@ import { FolderOpen, Monitor, Moon, RefreshCw, Sun } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 
 const isMac = navigator.userAgent.includes("Mac");
-export const SETTINGS_SHORTCUT = isMac ? "⌘ ," : "Ctrl + ,";
+const mod = isMac ? "⌘ " : "Ctrl + ";
+export const SETTINGS_SHORTCUT = `${mod},`;
 
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
@@ -29,6 +30,12 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
         <Section title={t("settings.shortcuts")}>
           <Row label={t("settings.openSettings")}>
             <Kbd>{SETTINGS_SHORTCUT}</Kbd>
+          </Row>
+          <Row label={t("settings.focusSearch")}>
+            <Kbd>{`${mod}F`}</Kbd>
+          </Row>
+          <Row label={t("settings.focusPreview")}>
+            <Kbd>{`${mod}P`}</Kbd>
           </Row>
           <Row label={t("settings.closeDialog")}>
             <Kbd>Esc</Kbd>

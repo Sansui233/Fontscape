@@ -13,6 +13,15 @@
   background-color: hsl(var(--muted) / 0.5);
 }
 
+/* 多选模式：最前面多一列勾选标记 */
+.list-row.selecting {
+  grid-template-columns: auto 2fr auto auto auto auto;
+}
+
+.list-row.selected {
+  background-color: hsl(var(--brand) / 0.08);
+}
+
 .list-cell {
   overflow: hidden;
   text-overflow: ellipsis;

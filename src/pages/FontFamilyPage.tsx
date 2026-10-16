@@ -104,7 +104,7 @@ export function FontFamilyPage() {
                   title={t("detail.toggleItalic")}
                   className={cn(
                     "w-7 h-7 flex items-center justify-center rounded-md transition-colors",
-                    italic ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"
+                    italic ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <Italic className="w-3.5 h-3.5" />

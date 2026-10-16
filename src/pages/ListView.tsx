@@ -5,9 +5,9 @@ import { useFilteredFamilies } from "@/hooks/useFilteredFamilies";
 import { useI18n } from "@/i18n";
 import { hasCriteria } from "@/lib/font-filter";
 import { useFontNames } from "@/lib/font-names";
-import { TagPicker } from "@/components/tags/TagPicker";
-import { ContextMenu } from "@/components/ui/ContextMenu";
-import { Tag as TagIcon } from "lucide-react";
+import { SelectionMark } from "@/components/font/FontCard";
+import { useFontContextMenu } from "@/components/font/useFontContextMenu";
+import { cn } from "@/lib/utils";
 import { useFilterStore } from "@/store/filterStore";
 import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
@@ -28,7 +28,9 @@ interface ListRowProps {
   fontItalic: boolean;
   previewText: string;
   fontFamilyName: string;
-  onNavigate: () => void;
+  multiSelectMode: boolean;
+  selected: boolean;
+  onClick: () => void;
   onContextMenu: (event: React.MouseEvent) => void;
 }
 
@@ -39,7 +41,9 @@ function ListRow({
   fontWeight,
   fontItalic,
   previewText,
-  onNavigate,
+  multiSelectMode,
+  selected,
+  onClick,
   onContextMenu,
 }: ListRowProps) {
   const [displayText, setDisplayText] = useState("");
@@ -68,7 +72,7 @@ function ListRow({
 
   return (
     <div
-      className="list-row"
+      className={cn("list-row", multiSelectMode && "selecting", selected && "selected")}
       style={{
         // prevent virtual list scroll up jitter
         // virtualizer 会在元素挂载前根据元素高度和 estimate 值提前占位。但不是所有情况都是提前知道元素高度
@@ -80,9 +84,10 @@ function ListRow({
         // minHeight: 20, // test
         height: fontSize * 1.2 + 25,
       }}
-      onClick={onNavigate}
+      onClick={onClick}
       onContextMenu={onContextMenu}
     >
+      {multiSelectMode && <SelectionMark selected={selected} />}
       <div
         className="list-cell preview-cell"
         style={{
@@ -140,8 +145,10 @@ export function ListView() {
   const filtered_font_families = useFilteredFamilies();
   const { familyName } = useFontNames();
   const { t } = useI18n();
-  const [menu, setMenu] = useState<{ x: number; y: number; family: string; title: string } | null>(null);
-  const [tagging, setTagging] = useState<{ family: string; title: string } | null>(null);
+  const fontMenu = useFontContextMenu();
+  const multiSelectMode = useUIStore((state) => state.multiSelectMode);
+  const selectedFontIds = useUIStore((state) => state.selectedFontIds);
+  const toggleFontSelection = useUIStore((state) => state.toggleFontSelection);
 
   const rowVirtualizer = useVirtualizer({
     count: filtered_font_families.length,
@@ -245,12 +252,13 @@ export function ListView() {
                   fontItalic={detailPreviewItalic}
                   previewText={uiStore.previewText}
                   fontFamilyName={fm.name}
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    setMenu({ x: event.clientX, y: event.clientY, family: fm.name, title: displayName });
-                  }}
-                  onNavigate={() =>
-                    navigate(`/family/${encodeURIComponent(fm.name)}`)
+                  multiSelectMode={multiSelectMode}
+                  selected={selectedFontIds.has(font.id)}
+                  onContextMenu={(event) => fontMenu.openMenu(event, fm, font)}
+                  onClick={() =>
+                    multiSelectMode
+                      ? toggleFontSelection(font.id)
+                      : navigate(`/family/${encodeURIComponent(fm.name)}`)
                   }
                 />
               </div>
@@ -258,23 +266,7 @@ export function ListView() {
           })}
         </div>
       </div>
-      {menu && (
-        <ContextMenu
-          x={menu.x}
-          y={menu.y}
-          onClose={() => setMenu(null)}
-          items={[
-            {
-              label: t("menu.tags"),
-              icon: <TagIcon />,
-              onClick: () => setTagging({ family: menu.family, title: menu.title }),
-            },
-          ]}
-        />
-      )}
-      {tagging && (
-        <TagPicker families={[tagging.family]} title={tagging.title} onClose={() => setTagging(null)} />
-      )}
+      {fontMenu.element}
     </div>
   );
 }

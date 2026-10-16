@@ -87,7 +87,6 @@ mod tests {
                 "view_mode": "grid"
             },
             "preferences": {
-                "preview_size": 24,
                 "preview_text": "",
                 "detail_preview_font_size": 24,
                 "detail_preview_font_weight": 400,

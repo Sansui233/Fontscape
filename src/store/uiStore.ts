@@ -3,7 +3,6 @@ import { create } from "zustand";
 
 interface UIStore {
   viewMode: ViewMode;
-  previewSize: number;
   previewText: string;
   sidebarCollapsed: boolean;
   multiSelectMode: boolean;
@@ -19,7 +18,6 @@ interface UIStore {
   settingsOpen: boolean;
   hydrate: (uiState: PersistedUIState, preferences: UserPreferences) => void;
   setViewMode: (mode: ViewMode) => void;
-  setPreviewSize: (size: number) => void;
   setPreviewText: (text: string) => void;
   toggleSidebar: () => void;
   setMultiSelectMode: (mode: boolean) => void;
@@ -38,7 +36,6 @@ interface UIStore {
 
 export const useUIStore = create<UIStore>((set) => ({
   viewMode: "grid",
-  previewSize: 20,
   previewText: "", // 空字符串表示使用字体家族名称
   sidebarCollapsed: false,
   multiSelectMode: false,
@@ -55,7 +52,6 @@ export const useUIStore = create<UIStore>((set) => ({
     set({
       viewMode: uiState.view_mode,
       sidebarCollapsed: uiState.sidebar_collapsed,
-      previewSize: preferences.preview_size,
       previewText: preferences.preview_text,
       detailPreviewFontSize: preferences.detail_preview_font_size,
       detailPreviewFontWeight: preferences.detail_preview_font_weight,
@@ -66,7 +62,6 @@ export const useUIStore = create<UIStore>((set) => ({
       fontNames: preferences.font_names,
     }),
   setViewMode: (mode) => set({ viewMode: mode }),
-  setPreviewSize: (size) => set({ previewSize: size }),
   setPreviewText: (text) => set({ previewText: text }),
   toggleSidebar: () =>
     set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),

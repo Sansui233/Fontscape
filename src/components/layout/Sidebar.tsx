@@ -432,7 +432,18 @@ function SidebarContent() {
           </li>
         </SidebarSection>
 
-        <SidebarSection title={t("nav.tags")}>
+        <SidebarSection
+          title={t("nav.tags")}
+          onContextMenu={(event) =>
+            openMenu(event, [
+              {
+                label: t("menu.newTag"),
+                icon: <Plus />,
+                onClick: () => setDialog({ kind: "newTag" }),
+              },
+            ])
+          }
+        >
           {tags.map((tag) => (
             <SidebarRow
               key={tag.id}

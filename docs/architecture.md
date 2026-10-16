@@ -43,7 +43,7 @@ React 组件 → Zustand store → src/lib/tauri-api.ts (invoke)
 | store | 内容 |
 | --- | --- |
 | `fontStore` | `fontState`、`isLoading`、`updateFontStatus`、`getFontById`、`getFontsByCssFamily` |
-| `uiStore` | 视图模式、预览文本和字号、详情预览的字号/字重/斜体、右侧栏宽度、界面语言、侧栏折叠、多选状态、`filters { languages, tags, searchText }` |
+| `uiStore` | 视图模式、预览文本、预览字号/字重/斜体（Grid、List、详情页共用）、右侧栏宽度、界面语言、侧栏折叠、多选状态、`filters { languages, tags, searchText }` |
 
 计划新增 `filterStore`，用来保存 Filter 列表、当前条件和增删改 action（见 plan 文档 §4）。
 

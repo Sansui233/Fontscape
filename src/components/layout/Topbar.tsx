@@ -55,26 +55,25 @@ export function Topbar() {
         <>
           <SearchField />
           <FilterButton />
-          <PreviewField view={isList ? "list" : "grid"} />
+          <PreviewField />
+          <div className="flex items-center p-0.5 rounded-md bg-foreground/[0.06]">
+            <SegmentButton
+              title={t("view.grid")}
+              active={!isList}
+              onClick={() => location.pathname !== "/" && navigate("/")}
+            >
+              <Grid3x3 className="h-4 w-4" />
+            </SegmentButton>
+            <SegmentButton
+              title={t("view.list")}
+              active={isList}
+              onClick={() => !isList && navigate("/list")}
+            >
+              <List className="h-4 w-4" />
+            </SegmentButton>
+          </div>
         </>
       )}
-
-      <div className="flex items-center p-0.5 rounded-md bg-foreground/[0.06]">
-        <SegmentButton
-          title={t("view.grid")}
-          active={!isList}
-          onClick={() => location.pathname !== "/" && navigate("/")}
-        >
-          <Grid3x3 className="h-4 w-4" />
-        </SegmentButton>
-        <SegmentButton
-          title={t("view.list")}
-          active={isList}
-          onClick={() => !isList && navigate("/list")}
-        >
-          <List className="h-4 w-4" />
-        </SegmentButton>
-      </div>
 
       {/* 侧栏展开时设置按钮在侧栏底部 */}
       <SlideSlot show={sidebarCollapsed}>

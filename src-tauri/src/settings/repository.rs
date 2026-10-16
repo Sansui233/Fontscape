@@ -112,7 +112,7 @@ mod tests {
         assert_eq!(repository.load_ui_state().unwrap(), state);
 
         let preferences = UserPreferences {
-            preview_size: 40,
+            detail_preview_font_size: 40,
             ..UserPreferences::default()
         };
         repository.save_preferences(&preferences).unwrap();

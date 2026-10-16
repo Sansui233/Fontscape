@@ -51,7 +51,6 @@ impl Default for PersistedUiState {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UserPreferences {
-    pub preview_size: u16,
     pub preview_text: String,
     pub detail_preview_font_size: u16,
     pub detail_preview_font_weight: u16,
@@ -66,7 +65,6 @@ pub struct UserPreferences {
 impl Default for UserPreferences {
     fn default() -> Self {
         Self {
-            preview_size: 20,
             preview_text: String::new(),
             detail_preview_font_size: 24,
             detail_preview_font_weight: 400,

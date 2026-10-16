@@ -4,14 +4,14 @@ import { hasCriteria } from "@/lib/font-filter";
 import { useFilterStore } from "@/store/filterStore";
 import { useFontStore } from "@/store/fontStore";
 import { useUIStore } from "@/store/uiStore";
-import { FontInfo, FontState } from "@/types/font";
+import { FontState } from "@/types/font";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { useDebouncedCallback } from "use-debounce";
 import { CARD_INFO_HEIGHT, FontCard, previewAreaHeight } from "./FontCard";
-import { FontInfoModal } from "./FontInfoModal";
 import { ContentBar } from "./ContentBar";
+import { useFontContextMenu } from "./useFontContextMenu";
 
 interface FontGridProps {
   fontState: FontState;
@@ -28,20 +28,19 @@ export function FontGrid({ fontState }: FontGridProps) {
   const getFontById = useFontStore((state) => state.getFontById);
   const criteria = useFilterStore((state) => state.criteria);
   const clearCriteria = useFilterStore((state) => state.clearCriteria);
-  const previewSize = useUIStore((state) => state.previewSize);
+  const fontSize = useUIStore((state) => state.detailPreviewFontSize);
 
   const parentRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(3);
   const location = useLocation();
   const [isRestored, setIsRestored] = useState(false);
-  const [infoFont, setInfoFont] = useState<FontInfo | null>(null);
-  const showInfo = useCallback((font: FontInfo) => setInfoFont(font), []);
+  const fontMenu = useFontContextMenu();
   const { t } = useI18n();
 
   const families = useFilteredFamilies();
 
   const rowCount = Math.ceil(families.length / columns);
-  const rowHeight = previewAreaHeight(previewSize) + CARD_INFO_HEIGHT + 2 + GAP;
+  const rowHeight = previewAreaHeight(fontSize) + CARD_INFO_HEIGHT + 2 + GAP;
 
   const rowVirtualizer = useVirtualizer({
     count: rowCount,
@@ -145,7 +144,13 @@ export function FontGrid({ fontState }: FontGridProps) {
                     {rowFamilies.map((family) => {
                       const font = getFontById(family.default_font_id);
                       return font ? (
-                        <FontCard key={family.name} fontFamily={family} font={font} onShowInfo={showInfo} />
+                        <FontCard
+                          key={family.name}
+                          fontFamily={family}
+                          font={font}
+                          onShowInfo={fontMenu.showInfo}
+                          onContextMenu={fontMenu.openMenu}
+                        />
                       ) : null;
                     })}
                   </div>
@@ -156,7 +161,7 @@ export function FontGrid({ fontState }: FontGridProps) {
         )}
       </div>
 
-      {infoFont && <FontInfoModal font={infoFont} onClose={() => setInfoFont(null)} />}
+      {fontMenu.element}
     </div>
   );
 }

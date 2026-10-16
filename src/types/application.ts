@@ -14,7 +14,6 @@ export interface PersistedUIState {
 }
 
 export interface UserPreferences {
-  preview_size: number;
   preview_text: string;
   detail_preview_font_size: number;
   detail_preview_font_weight: number;

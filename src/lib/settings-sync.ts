@@ -21,7 +21,6 @@ function snapshotUiState(): PersistedUIState {
 function snapshotPreferences(): UserPreferences {
   const ui = useUIStore.getState();
   return {
-    preview_size: ui.previewSize,
     preview_text: ui.previewText,
     detail_preview_font_size: ui.detailPreviewFontSize,
     detail_preview_font_weight: ui.detailPreviewFontWeight,
