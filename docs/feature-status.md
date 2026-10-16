@@ -32,7 +32,7 @@
 - ❌ `commands.rs::toggle_font` 只打印日志，然后返回 `Ok`。
 - ⚠️ **假成功**：`FontCard` 收到 Ok 后会调用 `updateFontStatus`，界面显示已禁用，但系统里什么都没变。
 - ⚠️ 系统字体保护名单在 `scanner.rs::is_system_font`，内容是 Segoe UI / Microsoft YaHei / SimSun / Tahoma。设计文档里的 Arial 不在名单中。
-- ❌ 备份、`WM_FONTCHANGE`、批量操作都没有。设计方案见 [font-enable-disable.md](font-enable-disable.md)。
+- ❌ 备份、`WM_FONTCHANGE`、批量操作都没有。设计方案见 [font-management.md](font-management.md)。
 
 ## F3 字体预览
 

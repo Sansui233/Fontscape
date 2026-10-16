@@ -146,15 +146,16 @@ function TextField({
   disabled?: boolean;
 }) {
   return (
-    <label className="grid grid-cols-[88px_1fr] items-center gap-2">
+    <label className="grid grid-cols-[88px_minmax(0,1fr)] items-center gap-2">
       <span className="text-[11px] font-semibold text-muted-foreground whitespace-nowrap">{label}</span>
+      {/* input 默认有约 20 个字符的固有宽度，需要 min-w-0 才能随面板收窄 */}
       <input
         value={value}
         disabled={disabled}
         placeholder={placeholder}
         maxLength={100}
         onChange={(event) => onChange(event.target.value)}
-        className="h-7 px-2 rounded-md border border-input bg-background text-[13px] outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-muted disabled:text-muted-foreground placeholder:text-muted-foreground/70"
+        className="w-full min-w-0 h-7 px-2 rounded-md border border-input bg-background text-[13px] outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-muted disabled:text-muted-foreground placeholder:text-muted-foreground/70"
       />
     </label>
   );

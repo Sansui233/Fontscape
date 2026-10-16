@@ -94,7 +94,9 @@ export function ContentBar() {
   ];
 
   return (
-    <div className="shrink-0 flex flex-wrap items-center gap-1.5 px-4 pt-3">
+    <div className="relative z-10 shrink-0 flex flex-wrap items-center gap-1.5 px-4 pt-3">
+      {/* 不加底部内边距，用一段渐隐遮罩把滚动内容过渡到 chip 条下方 */}
+      <div className="pointer-events-none absolute inset-x-0 top-full h-6 bg-linear-to-b from-background to-transparent" />
       {chips.map((chip) => (
         <span
           key={chip.key}
