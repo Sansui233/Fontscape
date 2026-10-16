@@ -66,7 +66,7 @@ pub struct UserPreferences {
 impl Default for UserPreferences {
     fn default() -> Self {
         Self {
-            preview_size: 24,
+            preview_size: 20,
             preview_text: String::new(),
             detail_preview_font_size: 24,
             detail_preview_font_weight: 400,

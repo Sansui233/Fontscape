@@ -38,7 +38,7 @@ interface UIStore {
 
 export const useUIStore = create<UIStore>((set) => ({
   viewMode: "grid",
-  previewSize: 24,
+  previewSize: 20,
   previewText: "", // 空字符串表示使用字体家族名称
   sidebarCollapsed: false,
   multiSelectMode: false,
