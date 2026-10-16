@@ -3,6 +3,7 @@ import { EmptyState } from "@/components/font/FontGrid";
 import { ContentBar } from "@/components/font/ContentBar";
 import { useFilteredFamilies } from "@/hooks/useFilteredFamilies";
 import { useI18n } from "@/i18n";
+import { languageCode } from "@/lib/filter-labels";
 import { hasCriteria } from "@/lib/font-filter";
 import { useFontNames } from "@/lib/font-names";
 import { SelectionMark } from "@/components/font/FontCard";
@@ -58,17 +59,7 @@ function ListRow({
       .catch(() => setDisplayText(previewDisplayText));
   }, [displayName, previewText, font.path]);
 
-  const simplifyLanguage = (lang: string) => {
-    if (lang.toLowerCase().includes("chinese") || lang === "Chinese")
-      return "zh";
-    if (lang.toLowerCase().includes("japanese") || lang === "Japanese")
-      return "jp";
-    if (lang.toLowerCase().includes("english") || lang === "English")
-      return "en";
-    return lang.substring(0, 2).toLowerCase();
-  };
-
-  const languages = font.languages.map(simplifyLanguage).slice(0, 3);
+  const languages = font.languages.map(languageCode).filter(Boolean).slice(0, 3);
 
   return (
     <div

@@ -29,6 +29,7 @@ function snapshotPreferences(): UserPreferences {
     language: ui.language,
     font_names: ui.fontNames,
     theme: ui.theme,
+    grid: ui.grid,
   };
 }
 

@@ -5,6 +5,22 @@ import type { FamilyTag, Tag } from "./tag";
 export type ViewMode = "grid" | "list";
 export type Theme = "system" | "light" | "dark";
 export type FontNameMode = "localized" | "english";
+export type GridCardMode = "minimal" | "detailed";
+export type TextAlign = "left" | "center" | "right";
+
+/** Grid 视图专属的显示选项 */
+export interface GridPreferences {
+  card_mode: GridCardMode;
+  /** 预览文字的对齐（两种模式共用） */
+  preview_align: TextAlign;
+  /** 极简模式下名称的对齐 */
+  name_align: TextAlign;
+  /** 详细模式下各项元数据是否显示 */
+  show_styles: boolean;
+  show_category: boolean;
+  show_format: boolean;
+  show_languages: boolean;
+}
 
 export interface PersistedUIState {
   active_filter_id: string | null;
@@ -23,6 +39,7 @@ export interface UserPreferences {
   language: string;
   font_names: FontNameMode;
   theme: Theme;
+  grid: GridPreferences;
 }
 
 export interface AppInfo {

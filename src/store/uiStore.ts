@@ -1,4 +1,4 @@
-import type { FontNameMode, PersistedUIState, Theme, UserPreferences, ViewMode } from "@/types/application";
+import type { FontNameMode, GridPreferences, PersistedUIState, Theme, UserPreferences, ViewMode } from "@/types/application";
 import { create } from "zustand";
 
 interface UIStore {
@@ -16,6 +16,7 @@ interface UIStore {
   fontNames: FontNameMode;
   theme: Theme;
   settingsOpen: boolean;
+  grid: GridPreferences;
   hydrate: (uiState: PersistedUIState, preferences: UserPreferences) => void;
   setViewMode: (mode: ViewMode) => void;
   setPreviewText: (text: string) => void;
@@ -32,6 +33,7 @@ interface UIStore {
   setTheme: (theme: Theme) => void;
   setFontNames: (mode: FontNameMode) => void;
   setSettingsOpen: (open: boolean) => void;
+  setGrid: (patch: Partial<GridPreferences>) => void;
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -48,6 +50,15 @@ export const useUIStore = create<UIStore>((set) => ({
   fontNames: "localized",
   theme: "system",
   settingsOpen: false,
+  grid: {
+    card_mode: "detailed",
+    preview_align: "left",
+    name_align: "left",
+    show_styles: true,
+    show_category: true,
+    show_format: true,
+    show_languages: true,
+  },
   hydrate: (uiState, preferences) =>
     set({
       viewMode: uiState.view_mode,
@@ -60,6 +71,7 @@ export const useUIStore = create<UIStore>((set) => ({
       language: preferences.language,
       theme: preferences.theme,
       fontNames: preferences.font_names,
+      grid: preferences.grid,
     }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setPreviewText: (text) => set({ previewText: text }),
@@ -88,4 +100,5 @@ export const useUIStore = create<UIStore>((set) => ({
   setTheme: (theme) => set({ theme }),
   setFontNames: (mode) => set({ fontNames: mode }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
+  setGrid: (patch) => set((state) => ({ grid: { ...state.grid, ...patch } })),
 }));

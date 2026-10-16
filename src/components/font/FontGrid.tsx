@@ -9,7 +9,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { useDebouncedCallback } from "use-debounce";
-import { CARD_INFO_HEIGHT, FontCard, previewAreaHeight } from "./FontCard";
+import { cardHeight, FontCard } from "./FontCard";
 import { ContentBar } from "./ContentBar";
 import { useFontContextMenu } from "./useFontContextMenu";
 
@@ -17,9 +17,12 @@ interface FontGridProps {
   fontState: FontState;
 }
 
-const MIN_CARD_WIDTH = 220;
-const GAP = 12;
-const PADDING_X = 16;
+const MIN_CARD_WIDTH = 260;
+/** 极简卡片自带 8px 内边距，间距和外边距相应收小，文字到边缘的视觉距离与详细模式一致 */
+const SPACING = {
+  minimal: { gap: 8, paddingX: 16 },
+  detailed: { gap: 20, paddingX: 24 },
+} as const;
 
 // 存储滚动位置
 const scrollPositions = new Map<string, number>();
@@ -29,9 +32,11 @@ export function FontGrid({ fontState }: FontGridProps) {
   const criteria = useFilterStore((state) => state.criteria);
   const clearCriteria = useFilterStore((state) => state.clearCriteria);
   const fontSize = useUIStore((state) => state.detailPreviewFontSize);
+  const cardMode = useUIStore((state) => state.grid.card_mode);
+  const { gap: GAP, paddingX: PADDING_X } = SPACING[cardMode];
 
   const parentRef = useRef<HTMLDivElement>(null);
-  const [columns, setColumns] = useState(3);
+  const [width, setWidth] = useState(0);
   const location = useLocation();
   const [isRestored, setIsRestored] = useState(false);
   const fontMenu = useFontContextMenu();
@@ -39,8 +44,10 @@ export function FontGrid({ fontState }: FontGridProps) {
 
   const families = useFilteredFamilies();
 
+  // 按容器宽度计算列数，侧栏收起或窗口缩放时自动调整
+  const columns = Math.max(1, Math.floor((width - PADDING_X * 2 + GAP) / (MIN_CARD_WIDTH + GAP)));
   const rowCount = Math.ceil(families.length / columns);
-  const rowHeight = previewAreaHeight(fontSize) + CARD_INFO_HEIGHT + 2 + GAP;
+  const rowHeight = cardHeight(fontSize, cardMode) + GAP;
 
   const rowVirtualizer = useVirtualizer({
     count: rowCount,
@@ -50,19 +57,15 @@ export function FontGrid({ fontState }: FontGridProps) {
     initialOffset: scrollPositions.get(location.key) || 0,
   });
 
-  // 卡片高度只由字号决定，字号变化时重新测量
+  // 卡片高度只由字号和模式决定，变化时重新测量
   useEffect(() => {
     rowVirtualizer.measure();
   }, [rowHeight, columns, rowVirtualizer]);
 
-  // 按容器宽度计算列数，侧栏收起或窗口缩放时自动调整
   useLayoutEffect(() => {
     const element = parentRef.current;
     if (!element) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const width = entry.contentRect.width - PADDING_X * 2;
-      setColumns(Math.max(1, Math.floor((width + GAP) / (MIN_CARD_WIDTH + GAP))));
-    });
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
     observer.observe(element);
     return () => observer.disconnect();
   }, []);

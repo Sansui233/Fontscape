@@ -83,7 +83,7 @@ mod tests {
     use super::SettingsRepository;
     use crate::filters::FilterCriteria;
     use crate::persistence::Database;
-    use crate::settings::{PersistedUiState, UserPreferences, ViewMode};
+    use crate::settings::{GridCardMode, GridPreferences, PersistedUiState, TextAlign, UserPreferences, ViewMode};
 
     #[test]
     fn round_trips_and_falls_back_to_defaults() {
@@ -113,6 +113,12 @@ mod tests {
 
         let preferences = UserPreferences {
             detail_preview_font_size: 40,
+            grid: GridPreferences {
+                card_mode: GridCardMode::Detailed,
+                name_align: TextAlign::Center,
+                show_format: false,
+                ..GridPreferences::default()
+            },
             ..UserPreferences::default()
         };
         repository.save_preferences(&preferences).unwrap();

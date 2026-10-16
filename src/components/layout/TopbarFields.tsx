@@ -3,8 +3,10 @@ import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { useFilterStore } from "@/store/filterStore";
 import { useUIStore } from "@/store/uiStore";
-import { Italic, Search, Type, X } from "lucide-react";
+import type { GridPreferences, TextAlign } from "@/types/application";
+import { AlignCenter, AlignLeft, AlignRight, Italic, Search, Type, X } from "lucide-react";
 import { RefObject, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router";
 import { useDebouncedCallback } from "use-debounce";
 
 /** 灰色外框上的输入框底色：比背景略深，聚焦时变白 */
@@ -91,7 +93,7 @@ export function SearchField() {
   );
 }
 
-/** 预览文字 + 字号。字号按钮打开浮层，调字号、字重和斜体；Grid 与 List 共用 */
+/** 预览文字 + 字号。字号按钮打开浮层：上半部分是 Grid 与 List 共用的字号、字重和斜体，分隔线下是当前视图专属的选项 */
 export function PreviewField() {
   const previewText = useUIStore((state) => state.previewText);
   const setPreviewText = useUIStore((state) => state.setPreviewText);
@@ -103,6 +105,7 @@ export function PreviewField() {
   const setItalic = useUIStore((state) => state.setDetailPreviewItalic);
   const debouncedSet = useDebouncedCallback(setPreviewText, 400);
   const { t } = useI18n();
+  const isGrid = useLocation().pathname === "/";
 
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
@@ -140,22 +143,21 @@ export function PreviewField() {
       </button>
 
       {open && (
-        <Popover anchorRef={anchorRef} onClose={() => setOpen(false)} width={240}>
+        <Popover anchorRef={anchorRef} onClose={() => setOpen(false)} width={256}>
           <div className="p-3 space-y-3">
             <Slider label={t("preview.size")} value={size} min={12} max={72} onChange={setSize} unit="px" />
             <Slider label={t("preview.weight")} value={weight} min={100} max={900} step={100} onChange={setWeight} />
-            <button
-              type="button"
-              onClick={() => setItalic(!italic)}
-              className={cn(
-                "h-7 px-2 flex items-center gap-1.5 rounded-md text-[12px]",
-                italic ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"
-              )}
-            >
+            <ToggleChip active={italic} onClick={() => setItalic(!italic)}>
               <Italic className="w-3.5 h-3.5" />
               {t("preview.italic")}
-            </button>
+            </ToggleChip>
           </div>
+          {isGrid && (
+            <>
+              <div className="h-px bg-border" />
+              <GridOptions />
+            </>
+          )}
         </Popover>
       )}
     </div>
@@ -192,5 +194,98 @@ function Slider({ label, value, min, max, step = 1, onChange, unit = "" }: Slide
         {unit}
       </span>
     </label>
+  );
+}
+
+const ALIGN_ICONS: [TextAlign, typeof AlignLeft, "preview.alignLeft" | "preview.alignCenter" | "preview.alignRight"][] = [
+  ["left", AlignLeft, "preview.alignLeft"],
+  ["center", AlignCenter, "preview.alignCenter"],
+  ["right", AlignRight, "preview.alignRight"],
+];
+
+const DETAIL_FIELDS = [
+  ["show_styles", "preview.showStyles"],
+  ["show_category", "preview.showCategory"],
+  ["show_format", "preview.showFormat"],
+  ["show_languages", "preview.showLanguages"],
+] as const;
+
+/** Grid 专属：两种模式都能调预览对齐；极简模式另调名称对齐，详细模式选择显示哪些元数据 */
+function GridOptions() {
+  const grid = useUIStore((state) => state.grid);
+  const setGrid = useUIStore((state) => state.setGrid);
+  const { t } = useI18n();
+
+  return (
+    <div className="p-3 space-y-3">
+      <div className="grid grid-cols-2 p-0.5 rounded-md bg-muted">
+        {(["minimal", "detailed"] as const).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => setGrid({ card_mode: mode })}
+            className={cn(
+              "h-6 rounded text-[12px]",
+              grid.card_mode === mode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t(mode === "minimal" ? "preview.minimal" : "preview.detailed")}
+          </button>
+        ))}
+      </div>
+
+      <AlignRow label={t("preview.previewAlign")} value={grid.preview_align} onChange={(value) => setGrid({ preview_align: value })} />
+      {grid.card_mode === "minimal" ? (
+        <AlignRow label={t("preview.nameAlign")} value={grid.name_align} onChange={(value) => setGrid({ name_align: value })} />
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {DETAIL_FIELDS.map(([field, label]) => (
+            <ToggleChip key={field} active={grid[field]} onClick={() => setGrid({ [field]: !grid[field] } as Partial<GridPreferences>)}>
+              {t(label)}
+            </ToggleChip>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AlignRow({ label, value, onChange }: { label: string; value: TextAlign; onChange: (value: TextAlign) => void }) {
+  const { t } = useI18n();
+  return (
+    <div className="grid grid-cols-[56px_1fr] items-center gap-2 text-[12px] text-muted-foreground">
+      <span className="whitespace-nowrap">{label}</span>
+      <div className="flex gap-0.5 p-0.5 justify-self-start rounded-md bg-muted">
+        {ALIGN_ICONS.map(([align, Icon, title]) => (
+          <button
+            key={align}
+            type="button"
+            title={t(title)}
+            onClick={() => onChange(align)}
+            className={cn(
+              "w-7 h-6 flex items-center justify-center rounded",
+              value === align ? "bg-background text-foreground shadow-sm" : "hover:text-foreground"
+            )}
+          >
+            <Icon className="w-3.5 h-3.5" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ToggleChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "h-7 px-2 flex items-center gap-1.5 rounded-md text-[12px]",
+        active ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"
+      )}
+    >
+      {children}
+    </button>
   );
 }
