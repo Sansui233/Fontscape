@@ -1,5 +1,6 @@
 import { FilterDialog } from "@/components/filter/FilterDialog";
 import { DeleteFolderDialog, FolderNameDialog } from "@/components/filter/FolderDialogs";
+import { SETTINGS_SHORTCUT } from "@/components/settings/SettingsDialog";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { ConfirmDialog, NameDialog } from "@/components/ui/NameDialog";
 import { Dialog, DialogButton } from "@/components/ui/Dialog";
@@ -27,6 +28,7 @@ import {
   PanelLeft,
   Pencil,
   Plus,
+  Settings,
   Tag as TagIcon,
   Trash2,
 } from "lucide-react";
@@ -55,7 +57,7 @@ export function Sidebar() {
 
   if (!collapsed) {
     return (
-      <aside className="shrink-0" style={{ width: SIDEBAR_WIDTH }}>
+      <aside className="shrink-0 sidebar-enter" style={{ width: SIDEBAR_WIDTH }}>
         <SidebarContent />
       </aside>
     );
@@ -97,6 +99,28 @@ function SidebarHeader() {
         className="p-1.5 rounded-md text-muted-foreground hover:bg-sidebar-hover hover:text-foreground"
       >
         <PanelLeft className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
+/** 侧栏展开时设置按钮放在底部；收起时由标题栏显示 */
+function SidebarFooter() {
+  const collapsed = useUIStore((state) => state.sidebarCollapsed);
+  const setSettingsOpen = useUIStore((state) => state.setSettingsOpen);
+  const { t } = useI18n();
+
+  if (collapsed) return null;
+
+  return (
+    <div className="shrink-0 flex px-2 pb-2">
+      <button
+        type="button"
+        title={t("settings.tooltip", SETTINGS_SHORTCUT)}
+        onClick={() => setSettingsOpen(true)}
+        className="p-1.5 rounded-md text-muted-foreground hover:bg-sidebar-hover hover:text-foreground"
+      >
+        <Settings className="w-4 h-4" />
       </button>
     </div>
   );
@@ -449,6 +473,7 @@ function SidebarContent() {
           </li>
         </SidebarSection>
       </nav>
+      <SidebarFooter />
 
       {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
       {dialog && <SidebarDialog state={dialog} onClose={() => setDialog(null)} />}

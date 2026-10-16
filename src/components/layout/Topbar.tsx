@@ -37,11 +37,11 @@ export function Topbar() {
 
   return (
     <header data-tauri-drag-region className="h-12 shrink-0 flex items-center gap-2 pl-2">
-      {sidebarCollapsed && (
+      <SlideSlot show={sidebarCollapsed}>
         <IconButton title={t("nav.showSidebar")} onClick={toggleSidebar}>
           <PanelLeft className="h-4 w-4" />
         </IconButton>
-      )}
+      </SlideSlot>
       <IconButton title={t("nav.back")} onClick={() => navigate(-1)} disabled={!canGoBack}>
         <ArrowLeft className="h-4 w-4" />
       </IconButton>
@@ -76,9 +76,12 @@ export function Topbar() {
         </SegmentButton>
       </div>
 
-      <IconButton title={t("settings.tooltip", SETTINGS_SHORTCUT)} onClick={() => setSettingsOpen(true)}>
-        <Settings className="h-4 w-4" />
-      </IconButton>
+      {/* 侧栏展开时设置按钮在侧栏底部 */}
+      <SlideSlot show={sidebarCollapsed}>
+        <IconButton title={t("settings.tooltip", SETTINGS_SHORTCUT)} onClick={() => setSettingsOpen(true)}>
+          <Settings className="h-4 w-4" />
+        </IconButton>
+      </SlideSlot>
 
       <WindowControls />
     </header>
@@ -125,6 +128,24 @@ function PageTitle() {
           {count}
         </span>
       )}
+    </div>
+  );
+}
+
+/**
+ * 按钮显示/隐藏时宽度在 0 和 32px 之间过渡，相邻按钮随之平移。
+ * 隐藏时用 -ml-2 抵消 header 的 gap-2
+ */
+function SlideSlot({ show, children }: { show: boolean; children: React.ReactNode }) {
+  return (
+    <div
+      inert={!show}
+      className={cn(
+        "shrink-0 overflow-hidden transition-[width,margin,opacity] duration-200 ease-out",
+        show ? "w-8 opacity-100" : "w-0 -ml-2 opacity-0"
+      )}
+    >
+      {children}
     </div>
   );
 }
