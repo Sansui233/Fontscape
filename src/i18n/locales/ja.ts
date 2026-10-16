@@ -86,6 +86,8 @@ export const ja: Messages = {
   "tagPicker.create": (name) => `「${name}」を作成`,
   "tagPicker.empty": "名前を入力して最初のタグを作成",
   "tagPicker.families": (count) => `${count} ファミリー`,
+  "tagDrop.added": (count, tag) => `${count} ファミリーを「${tag}」に追加しました`,
+  "tagDrop.alreadyTagged": (tag) => `すでに「${tag}」に含まれています`,
   "tagDialog.newTitle": "新規タグ",
   "tagDialog.renameTitle": "タグ名を変更",
   "tagDialog.namePlaceholder": "タグ名",

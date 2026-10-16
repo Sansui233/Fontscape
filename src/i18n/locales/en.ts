@@ -86,6 +86,8 @@ export const en = {
   "tagPicker.create": (name: string) => `Create “${name}”`,
   "tagPicker.empty": "Type a name to create the first tag",
   "tagPicker.families": (count: number) => `${count} ${count === 1 ? "family" : "families"}`,
+  "tagDrop.added": (count: number, tag: string) => `Added ${count} ${count === 1 ? "family" : "families"} to “${tag}”`,
+  "tagDrop.alreadyTagged": (tag: string) => `Already tagged “${tag}”`,
   "tagDialog.newTitle": "New Tag",
   "tagDialog.renameTitle": "Rename Tag",
   "tagDialog.namePlaceholder": "Tag name",

@@ -86,6 +86,8 @@ export const ko: Messages = {
   "tagPicker.create": (name) => `“${name}” 만들기`,
   "tagPicker.empty": "이름을 입력해 첫 태그를 만드세요",
   "tagPicker.families": (count) => `${count}개 패밀리`,
+  "tagDrop.added": (count, tag) => `${count}개 패밀리를 “${tag}”에 추가했습니다`,
+  "tagDrop.alreadyTagged": (tag) => `이미 “${tag}”에 있습니다`,
   "tagDialog.newTitle": "새 태그",
   "tagDialog.renameTitle": "태그 이름 변경",
   "tagDialog.namePlaceholder": "태그 이름",

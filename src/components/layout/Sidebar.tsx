@@ -6,6 +6,7 @@ import { ConfirmDialog, NameDialog } from "@/components/ui/NameDialog";
 import { Dialog, DialogButton } from "@/components/ui/Dialog";
 import { errorText, useI18n } from "@/i18n";
 import { filterLabel, languageGlyph } from "@/lib/filter-labels";
+import { isFontDrag, readFontDrag } from "@/lib/font-drag";
 import { buildFolderTree, countChildren, type FolderNode } from "@/lib/folder-tree";
 import { countFontFamilies, hasCriteria, sameCriteria } from "@/lib/font-filter";
 import { cn } from "@/lib/utils";
@@ -163,6 +164,8 @@ function SidebarContent() {
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [dragItem, setDragItem] = useState<DragItem | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | undefined>(undefined);
+  const [tagDropId, setTagDropId] = useState<string | null>(null);
+  const setFamilyTag = useTagStore((state) => state.setFamilyTag);
 
   // 计数不受搜索文字影响，只反映 Filter 本身的条件
   const counts = useMemo(() => {
@@ -329,6 +332,37 @@ function SidebarContent() {
     };
   }
 
+  // ---------- 拖放：Grid / List 的字体拖到标签 ----------
+
+  function tagDropProps(tag: Tag) {
+    return {
+      dropActive: tagDropId === tag.id,
+      onDragOver: (event: React.DragEvent) => {
+        if (!isFontDrag(event)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = "copy";
+        setTagDropId(tag.id);
+      },
+      onDragLeave: (event: React.DragEvent) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node)) setTagDropId(null);
+      },
+      onDrop: (event: React.DragEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setTagDropId(null);
+        const families = readFontDrag(event).filter((family) => !familyTags[family]?.includes(tag.id));
+        if (families.length === 0) {
+          showToast(t("tagDrop.alreadyTagged", tag.name));
+          return;
+        }
+        setFamilyTag(tag.id, families, true)
+          .then(() => showToast(t("tagDrop.added", families.length, tag.name)))
+          .catch(showError);
+      },
+    };
+  }
+
   // ---------- 渲染 ----------
 
   function renderFilter(filter: SavedFilter, depth: number) {
@@ -451,6 +485,7 @@ function SidebarContent() {
               label={tag.name}
               count={tagCounts.get(tag.id) ?? 0}
               selected={isTagSelected(tag)}
+              {...tagDropProps(tag)}
               onClick={() => setCriteria({ ...EMPTY_FILTER_CRITERIA, tag_contains: tag.name })}
               onContextMenu={(event) =>
                 openMenu(event, [

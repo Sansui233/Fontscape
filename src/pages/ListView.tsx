@@ -4,6 +4,7 @@ import { ContentBar } from "@/components/font/ContentBar";
 import { useFilteredFamilies } from "@/hooks/useFilteredFamilies";
 import { useI18n } from "@/i18n";
 import { languageCode } from "@/lib/filter-labels";
+import { startFontDrag } from "@/lib/font-drag";
 import { hasCriteria } from "@/lib/font-filter";
 import { useFontNames } from "@/lib/font-names";
 import { SelectionMark } from "@/components/font/FontCard";
@@ -42,12 +43,14 @@ function ListRow({
   fontWeight,
   fontItalic,
   previewText,
+  fontFamilyName,
   multiSelectMode,
   selected,
   onClick,
   onContextMenu,
 }: ListRowProps) {
   const [displayText, setDisplayText] = useState("");
+  const { t } = useI18n();
 
   // 字体缺少的字形替换为方框，避免浏览器回退到其他字体造成误解
   useEffect(() => {
@@ -77,6 +80,10 @@ function ListRow({
       }}
       onClick={onClick}
       onContextMenu={onContextMenu}
+      draggable
+      onDragStart={(event) =>
+        startFontDrag(event, fontFamilyName, font.id, (count) => (count > 1 ? t("tagPicker.families", count) : displayName))
+      }
     >
       {multiSelectMode && <SelectionMark selected={selected} />}
       <div

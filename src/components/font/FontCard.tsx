@@ -1,5 +1,6 @@
 import { useI18n, valueLabel } from "@/i18n";
 import { languageCode } from "@/lib/filter-labels";
+import { startFontDrag } from "@/lib/font-drag";
 import { useFontNames } from "@/lib/font-names";
 import { getFontWeightName } from "@/lib/font";
 import { checkGlyphsInFont } from "@/lib/tauri-api";
@@ -100,6 +101,10 @@ export const FontCard = memo(function FontCard({ fontFamily, font, onShowInfo, o
 
   return (
     <div
+      draggable
+      onDragStart={(event) =>
+        startFontDrag(event, fontFamily.name, font.id, (count) => (count > 1 ? t("tagPicker.families", count) : displayName))
+      }
       onContextMenu={(event) => onContextMenu(event, fontFamily, font)}
       onClick={() => {
         if (multiSelectMode) {

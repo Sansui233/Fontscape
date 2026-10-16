@@ -86,6 +86,8 @@ export const zhCN: Messages = {
   "tagPicker.create": (name) => `新建「${name}」`,
   "tagPicker.empty": "输入名称创建第一个标签",
   "tagPicker.families": (count) => `${count} 个字体家族`,
+  "tagDrop.added": (count, tag) => `已将 ${count} 个字体家族加入「${tag}」`,
+  "tagDrop.alreadyTagged": (tag) => `已经在「${tag}」中`,
   "tagDialog.newTitle": "新建标签",
   "tagDialog.renameTitle": "重命名标签",
   "tagDialog.namePlaceholder": "标签名称",
