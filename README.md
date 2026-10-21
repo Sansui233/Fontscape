@@ -97,6 +97,17 @@ pnpm tauri:dev
 pnpm tauri:build
 ```
 
+### Release
+
+The version lives only in `package.json` (`tauri.conf.json` reads it; `npm version` syncs `Cargo.toml` / `Cargo.lock`). Bump, commit and tag in one step, then push the tag to trigger the GitHub release build:
+
+```bash
+npm version minor   # or patch / major / 1.2.3
+git push --follow-tags
+```
+
+The release workflow fails if the tag does not match the `package.json` version.
+
 ### Project Structure
 
 ```

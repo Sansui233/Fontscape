@@ -97,6 +97,17 @@ pnpm tauri:dev
 pnpm tauri:build
 ```
 
+### 发布
+
+版本号只在 `package.json` 中维护（`tauri.conf.json` 直接读取；`npm version` 会同步 `Cargo.toml` / `Cargo.lock`）。一条命令完成改版本、提交和打标签，推送标签后触发 GitHub Release 构建：
+
+```bash
+npm version minor   # 或 patch / major / 1.2.3
+git push --follow-tags
+```
+
+标签与 `package.json` 版本不一致时，Release 工作流会直接失败。
+
 ### 项目结构
 
 ```
