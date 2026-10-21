@@ -38,6 +38,8 @@ React 组件 → Zustand store → src/lib/tauri-api.ts (invoke)
 | `/list` | `ListView` |
 | `/family/:familyName` | `FontFamilyPage`，以 overlay 形式显示，右侧是 `RightSidebar` |
 
+筛选条件不进 URL。`/` 和 `/list` 的每条历史记录在 `location.state` 里存 `{ criteria, activeFilterId }`（`useFilterHistory`）：侧栏点击新增记录，后退 / 前进时恢复；其他方式改条件只替换当前记录。
+
 `App` 调用 `useFonts()` 扫描一次，再通过 `Outlet context` 把 `fontState` 和 `isLoading` 传下去。`Sidebar` 又调用了一次 `useFonts()`，所以会重复扫描，需要改为只从 store 读取。
 
 **Store**

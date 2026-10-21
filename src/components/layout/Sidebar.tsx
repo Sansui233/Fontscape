@@ -4,6 +4,7 @@ import { SETTINGS_SHORTCUT } from "@/components/settings/SettingsDialog";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { ConfirmDialog, NameDialog } from "@/components/ui/NameDialog";
 import { Dialog, DialogButton } from "@/components/ui/Dialog";
+import { isBrowsingPath, type FilterHistoryState } from "@/hooks/useFilterHistory";
 import { errorText, useI18n } from "@/i18n";
 import { filterLabel, languageGlyph } from "@/lib/filter-labels";
 import { isFontDrag, readFontDrag } from "@/lib/font-drag";
@@ -16,7 +17,7 @@ import { showToast } from "@/store/toastStore";
 import { familyTagNames, useTagStore } from "@/store/tagStore";
 import { useUIStore } from "@/store/uiStore";
 import type { CommandError } from "@/types/application";
-import { EMPTY_FILTER_CRITERIA, type FilterFolder, type SavedFilter } from "@/types/filter";
+import { EMPTY_FILTER_CRITERIA, type FilterCriteria, type FilterFolder, type SavedFilter } from "@/types/filter";
 import type { Tag } from "@/types/tag";
 import {
   ArrowUpToLine,
@@ -175,11 +176,8 @@ function SidebarContent() {
   const folders = useFilterStore((state) => state.folders);
   const activeFilterId = useFilterStore((state) => state.activeFilterId);
   const criteria = useFilterStore((state) => state.criteria);
-  const applyFilter = useFilterStore((state) => state.applyFilter);
-  const clearCriteria = useFilterStore((state) => state.clearCriteria);
   const moveFilter = useFilterStore((state) => state.moveFilter);
   const moveFolder = useFilterStore((state) => state.moveFolder);
-  const setCriteria = useFilterStore((state) => state.setCriteria);
   const tags = useTagStore((state) => state.tags);
   const familyTags = useTagStore((state) => state.familyTags);
 
@@ -194,12 +192,12 @@ function SidebarContent() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 在详情页点筛选时，回到上次的 Grid / List 查看结果
-  function showResults(action: () => void) {
-    action();
-    if (location.pathname !== "/" && location.pathname !== "/list") {
-      navigate(viewMode === "list" ? "/list" : "/");
-    }
+  // 侧栏选择是一次导航：新增历史记录，后退回到上一个筛选；在详情页点击时回到上次的 Grid / List
+  function showResults(next: FilterCriteria, filterId: string | null = null) {
+    const browsing = isBrowsingPath(location.pathname);
+    if (browsing && filterId === activeFilterId && sameCriteria(next, criteria)) return;
+    const state: FilterHistoryState = { criteria: next, activeFilterId: filterId };
+    navigate(browsing ? location.pathname : viewMode === "list" ? "/list" : "/", { state });
   }
 
   // 计数不受搜索文字影响，只反映 Filter 本身的条件
@@ -419,7 +417,7 @@ function SidebarContent() {
         count={counts.get(filter.id)}
         selected={filter.id === activeFilterId}
         dimmed={dragItem?.type === "filter" && dragItem.id === filter.id}
-        onClick={() => showResults(() => applyFilter(filter.id))}
+        onClick={() => showResults(filter.criteria, filter.id)}
         onContextMenu={(event) => openMenu(event, filterMenu(filter))}
         {...(isLanguage ? {} : dragProps({ type: "filter", id: filter.id }))}
       />
@@ -471,7 +469,7 @@ function SidebarContent() {
             label={t("nav.allFonts")}
             count={fontState?.css_font_families.length}
             selected={!hasCriteria(criteria)}
-            onClick={() => showResults(clearCriteria)}
+            onClick={() => showResults(EMPTY_FILTER_CRITERIA)}
           />
         </ul>
 
@@ -521,7 +519,7 @@ function SidebarContent() {
               count={tagCounts.get(tag.id) ?? 0}
               selected={isTagSelected(tag)}
               {...tagDropProps(tag)}
-              onClick={() => showResults(() => setCriteria({ ...EMPTY_FILTER_CRITERIA, tag_contains: tag.name }))}
+              onClick={() => showResults({ ...EMPTY_FILTER_CRITERIA, tag_contains: tag.name })}
               onContextMenu={(event) =>
                 openMenu(event, [
                   {

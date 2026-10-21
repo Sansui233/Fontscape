@@ -36,11 +36,11 @@ interface FilterStore {
     options: FilterOptions,
     uiState: PersistedUIState
   ) => void;
-  setCriteria: (criteria: FilterCriteria) => void;
+  /** 指定 activeFilterId 时，只有条件与该 Filter 一致才选中它 */
+  setCriteria: (criteria: FilterCriteria, activeFilterId?: string | null) => void;
   toggleValue: (field: CriteriaField, value: string) => void;
   setText: (field: TextCriteriaField, value: string) => void;
   clearCriteria: () => void;
-  applyFilter: (id: string) => void;
   setSearchText: (text: string) => void;
 
   // 以下 action 先写后端，成功后才更新状态；失败时抛出 CommandError，状态不变
@@ -92,9 +92,8 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
       activeFilterId: uiState.active_filter_id,
     }),
 
-  setCriteria: (criteria) => {
-    const { activeFilterId, filters } = get();
-    const active = filters.find((filter) => filter.id === activeFilterId);
+  setCriteria: (criteria, activeFilterId = get().activeFilterId) => {
+    const active = get().filters.find((filter) => filter.id === activeFilterId);
     const stillActive = active && sameCriteria(active.criteria, criteria);
     set({ criteria, activeFilterId: stillActive ? activeFilterId : null });
   },
@@ -110,11 +109,6 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   setText: (field, value) => get().setCriteria({ ...get().criteria, [field]: value }),
 
   clearCriteria: () => set({ criteria: EMPTY_FILTER_CRITERIA, activeFilterId: null }),
-
-  applyFilter: (id) => {
-    const filter = get().filters.find((item) => item.id === id);
-    if (filter) set({ criteria: filter.criteria, activeFilterId: filter.id });
-  },
 
   setSearchText: (searchText) => set({ searchText }),
 

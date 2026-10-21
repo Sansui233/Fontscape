@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from "react-router";
 import { AppLayout } from "./components/layout/AppLayout";
 import { SettingsDialog } from "./components/settings/SettingsDialog";
 import { useBootstrap } from "./hooks/useBootstrap";
+import { useFilterHistory } from "./hooks/useFilterHistory";
 import { useTheme } from "./hooks/useTheme";
 import { useDocumentLocale, useI18n } from "./i18n";
 import { resetDatabase } from "./lib/tauri-api";
@@ -63,6 +64,7 @@ function ReadyApp() {
   const restored = useRef(false);
   const settingsOpen = useUIStore((state) => state.settingsOpen);
   const setSettingsOpen = useUIStore((state) => state.setSettingsOpen);
+  useFilterHistory();
 
   // Ctrl/⌘ + , 打开设置
   useEffect(() => {
