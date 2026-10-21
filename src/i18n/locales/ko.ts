@@ -212,7 +212,7 @@ export const ko: Messages = {
   "info.openInExplorer": "탐색기에서 보기",
   "info.basic": "기본 정보",
   "info.metadataTitle": "글꼴 메타데이터 (OpenType Name ID)",
-  "info.cssFamily": "CSS 글꼴 패밀리",
+  "info.cssFamily": "CSS 이름",
   "info.filePath": "파일 경로",
   "info.fileSize": "파일 크기",
   "info.status": "상태",

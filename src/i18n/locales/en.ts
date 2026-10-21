@@ -214,7 +214,7 @@ export const en = {
   "info.openInExplorer": "Show in Explorer",
   "info.basic": "Basic Information",
   "info.metadataTitle": "Font Metadata (OpenType Name IDs)",
-  "info.cssFamily": "CSS Font Family",
+  "info.cssFamily": "CSS Name",
   "info.filePath": "File Path",
   "info.fileSize": "File Size",
   "info.status": "Status",

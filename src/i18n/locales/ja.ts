@@ -212,7 +212,7 @@ export const ja: Messages = {
   "info.openInExplorer": "エクスプローラーで表示",
   "info.basic": "基本情報",
   "info.metadataTitle": "フォントメタデータ（OpenType Name ID）",
-  "info.cssFamily": "CSS フォントファミリー",
+  "info.cssFamily": "CSS 名",
   "info.filePath": "ファイルパス",
   "info.fileSize": "ファイルサイズ",
   "info.status": "状態",

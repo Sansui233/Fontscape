@@ -67,6 +67,9 @@ export function RightSidebar({ font }: { font: FontInfo }) {
         </div>
 
         <Section title={t("info.fileInfo")}>
+          <Row label={t("info.cssFamily")}>
+            <span className="break-words select-text">{font.css_font_family}</span>
+          </Row>
           <Row label={t("info.path")}>
             <span className="break-all">{font.path}</span>
             <button

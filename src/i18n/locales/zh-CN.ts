@@ -212,7 +212,7 @@ export const zhCN: Messages = {
   "info.openInExplorer": "在资源管理器中显示",
   "info.basic": "基本信息",
   "info.metadataTitle": "字体元数据（OpenType Name ID）",
-  "info.cssFamily": "CSS 字体族名",
+  "info.cssFamily": "CSS 名称",
   "info.filePath": "文件路径",
   "info.fileSize": "文件大小",
   "info.status": "状态",
