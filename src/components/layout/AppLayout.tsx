@@ -1,3 +1,4 @@
+import { FontChangesNotice } from "@/components/font/FontChangesNotice";
 import { Toaster } from "@/components/ui/Toaster";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/uiStore";
@@ -29,6 +30,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </main>
       </div>
 
+      <FontChangesNotice />
       <Toaster />
     </div>
   );

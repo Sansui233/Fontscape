@@ -1,6 +1,6 @@
 import { Dialog } from "@/components/ui/Dialog";
 import { errorText, LOCALE_OPTIONS, useI18n } from "@/i18n";
-import { getAppInfo, openInExplorer, refreshFonts, resetDatabase } from "@/lib/tauri-api";
+import { getAppInfo, openInExplorer, resetDatabase } from "@/lib/tauri-api";
 import { cn } from "@/lib/utils";
 import { useFontStore } from "@/store/fontStore";
 import { showToast } from "@/store/toastStore";
@@ -109,14 +109,13 @@ function GeneralSection() {
 function LibrarySection({ info }: { info: AppInfo | null }) {
   const { t } = useI18n();
   const fontState = useFontStore((state) => state.fontState);
-  const setFontState = useFontStore((state) => state.setFontState);
+  const refresh = useFontStore((state) => state.refresh);
   const [scanning, setScanning] = useState(false);
 
   async function rescan() {
     setScanning(true);
     try {
-      const state = await refreshFonts();
-      setFontState(state);
+      const state = await refresh();
       showToast(t("settings.rescanDone", state.css_font_families.length));
     } catch (error) {
       showToast(t("settings.rescanFailed", errorText(t, error as CommandError)), "error");

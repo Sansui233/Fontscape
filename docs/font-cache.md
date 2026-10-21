@@ -1,10 +1,16 @@
 # 字体缓存与更新时机
 
-> 状态：**计划**。缓存规则（键、失效条件、错误处理）沿用 [filter-persistence-font-cache-plan.md](filter-persistence-font-cache-plan.md) §3，本文不重复，只回答「什么时候更新」。
+> 状态：**启动与手动刷新已完成**；焦点触发、写操作更新、字形检查缓存仍是计划。缓存规则（键、失效条件、错误处理）沿用 [filter-persistence-font-cache-plan.md](filter-persistence-font-cache-plan.md) §3，本文不重复，只回答「什么时候更新」。
 
 ## 现状
 
-`bootstrap_app` 每次启动都并行全量解析（`scan_all_fonts`）。`font_file_cache` 表已建，但没用上。`refresh_fonts` 等同于全量扫描。
+实现在 `src-tauri/src/font/cache.rs`（`FontCache`）：
+
+- `load()`：只读缓存，返回当前版本的全部字体；没有时返回 None。
+- `reconcile(force)`：列目录 → 对比 → 并行解析新增 / 变化的文件 → 一个事务写回，返回 `FontState` 和 `FontChanges`。解析失败的文件写入空结果，文件不变时不再重复解析。
+- 缓存键是小写路径；版本号 = `PARSER_SCHEMA_VERSION * 1000 + CLASSIFIER_VERSION`。
+
+启动时**先显示缓存，再在后台对比**（用户决定，取代下文「同步执行」的设想）：有变化时发送 `fonts_changed`，右上角标题栏下方显示「新增 n，修改 n，删除 n」，带 Refresh 和关闭按钮。没有可用缓存时同步解析。
 
 ## 核心：一次增量对比（reconcile）
 
@@ -22,9 +28,9 @@
 
 | 时机 | 做什么 | 版本 |
 | --- | --- | --- |
-| 启动 | 对所有目录做 reconcile | 第一版 |
+| 启动 | 返回缓存，后台 reconcile，有变化时提示（已完成） | 第一版 |
 | 本应用的写操作（安装、卸载、启用、禁用、增删目录） | 后端只更新受影响的文件，直接返回变化，不重扫 | 第一版 |
-| 手动刷新 | reconcile；按住 Shift 时强制全部重新解析 | 第一版 |
+| 手动刷新 | reconcile（已完成）；强制解析入口是 `scan_fonts`，界面还没有 | 第一版 |
 | 窗口重新获得焦点 | reconcile，最多每 30 秒一次，用于发现外部安装的字体 | 第一版 |
 | 目录监听（`notify` 库，底层 ReadDirectoryChangesW） | 防抖 1–2 秒后对该目录做 reconcile | 按需：焦点触发不够时再加 |
 | 注册表变化（`RegNotifyChangeKeyValue`） | 重新读启用状态，不重新解析文件 | 和启用 / 禁用一起做 |

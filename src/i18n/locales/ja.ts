@@ -161,6 +161,10 @@ export const ja: Messages = {
   "settings.scanning": "スキャン中…",
   "settings.rescanDone": (families) => `${families} ファミリーが見つかりました`,
   "settings.rescanFailed": (message) => `スキャンに失敗しました：${message}`,
+  "fontChanges.found": (added, modified, removed) =>
+    `フォントフォルダが更新されました：追加 ${added}、変更 ${modified}、削除 ${removed}`,
+  "fontChanges.refresh": "更新",
+  "fontChanges.dismiss": "閉じる",
   "settings.fontFolders": "フォントフォルダ",
   "settings.data": "データ",
   "settings.database": "データベース",

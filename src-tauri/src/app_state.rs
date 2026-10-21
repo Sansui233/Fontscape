@@ -1,4 +1,5 @@
 use crate::filters::{FilterRepository, FilterService};
+use crate::font::{FontCache, FontScanner};
 use crate::persistence::{Database, PersistenceResult};
 use crate::settings::SettingsRepository;
 use crate::tags::TagService;
@@ -10,6 +11,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub struct AppServices {
     pub database: Database,
     pub filters: FilterService,
+    pub fonts: FontCache,
     pub settings: SettingsRepository,
     pub tags: TagService,
 }
@@ -18,11 +20,13 @@ impl AppServices {
     pub fn initialize(database_path: PathBuf) -> PersistenceResult<Self> {
         let database = Database::initialize(database_path)?;
         let filters = FilterService::new(FilterRepository::new(database.clone()));
+        let fonts = FontCache::new(database.clone(), FontScanner::new().font_dirs().to_vec());
         let settings = SettingsRepository::new(database.clone());
         let tags = TagService::new(database.clone());
         Ok(Self {
             database,
             filters,
+            fonts,
             settings,
             tags,
         })

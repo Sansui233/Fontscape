@@ -1,5 +1,5 @@
 import { startSettingsSync } from "@/lib/settings-sync";
-import { bootstrapApp } from "@/lib/tauri-api";
+import { bootstrapApp, onFontsChanged } from "@/lib/tauri-api";
 import { useFilterStore } from "@/store/filterStore";
 import { useFontStore } from "@/store/fontStore";
 import { useTagStore } from "@/store/tagStore";
@@ -32,7 +32,10 @@ export function useBootstrap() {
 
   const run = useCallback(() => {
     setStatus({ state: "loading" });
-    pending ??= bootstrapApp();
+    // 先注册监听：bootstrap 返回缓存后，后台对比可能很快就发出变化
+    pending ??= onFontsChanged((changes) => useFontStore.getState().setPendingChanges(changes)).then(
+      () => bootstrapApp()
+    );
     pending
       .then((payload) => {
         applyPayload(payload);

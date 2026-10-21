@@ -4,12 +4,12 @@ use crate::filters::{
     CreateFilterInput, CreateFolderInput, DeleteFolderMode, FilterError, FilterFolder, SavedFilter,
     UpdateFilterInput,
 };
-use crate::font::{check_glyphs, FontScanner, FontState, GlyphCheckResult};
+use crate::font::{check_glyphs, FontCache, FontScanner, FontState, GlyphCheckResult};
 use crate::persistence::{migrations::LATEST_SCHEMA_VERSION, PersistenceError};
 use crate::settings::{PersistedUiState, UserPreferences};
 use crate::tags::{Tag, TagError};
 use serde::Serialize;
-use tauri::State;
+use tauri::{AppHandle, Emitter, State};
 
 /// 返回给前端的统一错误：code 稳定、可判断；message 可直接展示
 #[derive(Debug, Serialize)]
@@ -61,26 +61,58 @@ fn with_services<T>(
     action(services)
 }
 
-async fn scan_in_background() -> CommandResult<FontState> {
-    tauri::async_runtime::spawn_blocking(|| FontScanner::new().scan_all_fonts())
+/// 字体目录有变化时推给前端的事件，载荷为 FontChanges
+pub const FONTS_CHANGED_EVENT: &str = "fonts_changed";
+
+async fn run_blocking<T: Send + 'static>(
+    task: impl FnOnce() -> Result<T, PersistenceError> + Send + 'static,
+) -> CommandResult<T> {
+    tauri::async_runtime::spawn_blocking(task)
         .await
         .map_err(|error| CommandError::new("scan_failed", error))?
         .map_err(|error| CommandError::new("scan_failed", error))
 }
 
-/// 启动时唯一的数据入口：字体、Filter、设置一次返回
+fn font_cache(state: &State<'_, AppState>) -> CommandResult<FontCache> {
+    with_services(state, |services| Ok(services.fonts.clone()))
+}
+
+/// 启动时唯一的数据入口：字体、Filter、设置一次返回。
+/// 有缓存时直接返回缓存，再在后台对比字体目录，有变化时发送 fonts_changed；
+/// 第一次启动（或解析版本变化）没有可用缓存，同步完成解析后再返回。
 #[tauri::command]
-pub async fn bootstrap_app(state: State<'_, AppState>) -> CommandResult<BootstrapPayload> {
-    let (filters, folders, tags, family_tags, ui_state, preferences) = with_services(&state, |services| {
+pub async fn bootstrap_app(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> CommandResult<BootstrapPayload> {
+    let (filters, folders, tags, family_tags, ui_state, preferences, cache) = with_services(&state, |services| {
         let filters = services.filters.list()?;
         let folders = services.filters.list_folders()?;
         let tags = services.tags.list()?;
         let family_tags = services.tags.list_assignments()?;
         let ui_state = reconcile_ui_state(services.settings.load_ui_state()?, &filters);
         let preferences = services.settings.load_preferences()?;
-        Ok((filters, folders, tags, family_tags, ui_state, preferences))
+        Ok((filters, folders, tags, family_tags, ui_state, preferences, services.fonts.clone()))
     })?;
-    let font_state = scan_in_background().await?;
+
+    let cached = run_blocking({
+        let cache = cache.clone();
+        move || cache.load()
+    })
+    .await?;
+    let font_state = match cached {
+        Some(font_state) => {
+            tauri::async_runtime::spawn_blocking(move || match cache.reconcile(false) {
+                Ok((_, changes)) if !changes.is_empty() => {
+                    let _ = app.emit(FONTS_CHANGED_EVENT, changes);
+                }
+                Ok(_) => {}
+                Err(error) => println!("Background font reconcile failed: {error}"),
+            });
+            font_state
+        }
+        None => run_blocking(move || cache.reconcile(false)).await?.0,
+    };
 
     Ok(BootstrapPayload {
         font_state,
@@ -94,15 +126,18 @@ pub async fn bootstrap_app(state: State<'_, AppState>) -> CommandResult<Bootstra
     })
 }
 
+/// 忽略缓存，重新解析全部字体文件
 #[tauri::command]
-pub async fn scan_fonts() -> CommandResult<FontState> {
-    scan_in_background().await
+pub async fn scan_fonts(state: State<'_, AppState>) -> CommandResult<FontState> {
+    let cache = font_cache(&state)?;
+    Ok(run_blocking(move || cache.reconcile(true)).await?.0)
 }
 
+/// 增量刷新：只解析新增和变化的文件
 #[tauri::command]
-pub async fn refresh_fonts() -> CommandResult<FontState> {
-    // 缓存实现前与 scan_fonts 相同
-    scan_in_background().await
+pub async fn refresh_fonts(state: State<'_, AppState>) -> CommandResult<FontState> {
+    let cache = font_cache(&state)?;
+    Ok(run_blocking(move || cache.reconcile(false)).await?.0)
 }
 
 #[tauri::command]

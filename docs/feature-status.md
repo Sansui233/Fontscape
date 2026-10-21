@@ -22,7 +22,7 @@
 - ✅ 扫描 `C:\Windows\Fonts` 和 `%LOCALAPPDATA%\Microsoft\Windows\Fonts`，支持 TTF / OTF / TTC（多 face）。
 - ✅ 解析 Name ID 0–20、中文名、CSS family、字重、可变字体、字符集。细节见 [font-parsing.md](font-parsing.md)。
 - ❌ **没有读注册表**。只按目录扫描，所以无法区分已安装和仅存在文件的字体，也识别不了「已禁用」。
-- ❌ **没有缓存**。每次启动都全量解析；`font_file_cache` 表已建，但还没用上。
+- ✅ **增量缓存**：按文件的大小、修改时间、解析版本判断，只解析新增和变化的文件。有缓存时启动直接显示缓存，后台对比后在右上角提示变化，点 Refresh 载入。设置页 Rescan 也走增量。
 - ⚠️ **解析是串行的**。依赖里有 `rayon`，但没有使用。
 - ⚠️ **启动时会扫描两次**：`App` 和 `Sidebar` 各调用了一次 `useFonts()`。
 - ⚠️ 判断格式时扩展名区分大小写（`Some("ttf")`），所以 `.TTC` 只会解析第一个 face，`.OTF` 会被标成 TrueType。
@@ -74,7 +74,6 @@
   - 侧栏 Tags 分组：点击按该标签筛选，右键可重命名或删除（需确认）；分组底部是「+ 新建标签」。
 - ✅ **启动与设置**：一次 `bootstrap_app` 调用返回所有数据；当前条件、视图、侧栏状态和预览偏好会自动保存，保存失败时弹出 toast。
 - ⚠️ **搜索**：只做子串匹配，会检查 family 内所有 face。`fuse.js`、`pinyin-pro` 还没用上。
-- ❌ 字体解析缓存（`font_file_cache` 还没用到，每次启动都全量解析，已改为 rayon 并行）。
 
 ## F7 右键菜单
 

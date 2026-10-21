@@ -161,6 +161,10 @@ export const ko: Messages = {
   "settings.scanning": "검색 중…",
   "settings.rescanDone": (families) => `${families}개 패밀리를 찾았습니다`,
   "settings.rescanFailed": (message) => `검색 실패: ${message}`,
+  "fontChanges.found": (added, modified, removed) =>
+    `글꼴 폴더가 변경됨: 추가 ${added}, 수정 ${modified}, 삭제 ${removed}`,
+  "fontChanges.refresh": "새로 고침",
+  "fontChanges.dismiss": "닫기",
   "settings.fontFolders": "글꼴 폴더",
   "settings.data": "데이터",
   "settings.database": "데이터베이스",

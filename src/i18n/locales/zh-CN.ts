@@ -161,6 +161,10 @@ export const zhCN: Messages = {
   "settings.scanning": "正在扫描…",
   "settings.rescanDone": (families) => `找到 ${families} 个字体家族`,
   "settings.rescanFailed": (message) => `扫描失败：${message}`,
+  "fontChanges.found": (added, modified, removed) =>
+    `字体目录有更新：新增 ${added}，修改 ${modified}，删除 ${removed}`,
+  "fontChanges.refresh": "刷新",
+  "fontChanges.dismiss": "关闭",
   "settings.fontFolders": "字体目录",
   "settings.data": "数据",
   "settings.database": "数据库",

@@ -12,8 +12,8 @@ React 组件 → Zustand store → src/lib/tauri-api.ts (invoke)
 
 | command | 前端封装 | 状态 |
 | --- | --- | --- |
-| `scan_fonts` | `scanFonts` | ✅ 全量扫描，返回 `FontState` |
-| `refresh_fonts` | `refreshFonts` | ✅ 目前等同于 `scan_fonts` |
+| `scan_fonts` | `scanFonts` | ✅ 忽略缓存、全部重新解析，返回 `FontState`（前端暂未调用） |
+| `refresh_fonts` | `refreshFonts` | ✅ 增量 reconcile，返回 `FontState` |
 | `toggle_font` | `toggleFont` | ❌ 空实现 |
 | `check_glyphs_in_font` | `checkGlyphsInFont` | ✅ 每次都读整个文件，见 font-parsing.md |
 | `open_in_explorer` | `openInExplorer` | ✅ 仅 Windows |
@@ -23,6 +23,8 @@ React 组件 → Zustand store → src/lib/tauri-api.ts (invoke)
 | `get_app_info` / `reset_database` | 同名 | ✅ 设置页使用；重建时先备份原文件 |
 | `move_filter` / `create_folder` / `rename_folder` / `move_folder` / `delete_folder` | 同名 | ✅ 文件夹树；`delete_folder` 返回随之删除的筛选 ID |
 | `show_snap_layouts` | — | ✅ 仅 Windows，模拟 Win+Z |
+
+事件：`fonts_changed`（载荷 `FontChanges { added, modified, removed }`），启动后的后台 reconcile 发现变化时发送，前端用 `onFontsChanged` 监听。
 
 `main.rs` 的 setup 阶段创建 `AppState { database_path, services: RwLock<Result<AppServices, String>> }`。数据库打不开时应用照常启动，相关 command 返回 `database_unavailable`。重建数据库后会原地替换 services，不需要重启。
 
@@ -58,7 +60,7 @@ React 组件 → Zustand store → src/lib/tauri-api.ts (invoke)
 | `settings/` | `PersistedUiState`、`UserPreferences` 的类型和默认值。还没有读写代码 |
 | `persistence/` | `Database`（每次操作新开一个连接，`busy_timeout` 5s，开启外键）、migrations、`PersistenceError` |
 | `bootstrap.rs` | `BootstrapPayload` 结构 |
-| `app_state.rs` | `AppServices { database, filters }` |
+| `app_state.rs` | `AppServices { database, filters, fonts, settings, tags }` |
 
 ## SQLite（`<app_data_dir>/fontscape.db`）
 
@@ -68,7 +70,7 @@ React 组件 → Zustand store → src/lib/tauri-api.ts (invoke)
 | `saved_filters` | Filter，`group_name` 为 `language` 或 `saved`，条件存 JSON，`folder_id` 指向文件夹 | ✅ |
 | `filter_folders` | 「已存筛选」中的文件夹，`parent_id` 实现嵌套（v3） | ✅ |
 | `app_settings` | 按 `namespace`（ui_state / preference）和 `key` 存储 | ❌ 未使用 |
-| `font_file_cache` | 按文件路径缓存解析结果 | ❌ 未使用 |
+| `font_file_cache` | 按文件路径（小写）缓存解析结果，`font/cache.rs` 读写 | ✅ |
 
 - v1 建表，并写入 7 个 Language preset。
 - v2 把旧的 `styles` 条件改为 `categories`；遇到非空的旧值时拒绝升级，不改动原数据。
@@ -76,9 +78,12 @@ React 组件 → Zustand store → src/lib/tauri-api.ts (invoke)
 
 ## 启动流程
 
-**现状**：setup 打开数据库 → 前端挂载 → `scan_fonts` 全量解析（Sidebar 会再触发一次）→ 渲染。
+setup 打开数据库 → 前端先注册 `fonts_changed` 监听，再调用一次 `bootstrap_app`：
 
-**目标**：只调用一次 `bootstrap_app` → 后端做增量扫描，同时读取 Filter 和设置 → 前端恢复状态后再显示可操作的界面。详见 plan 文档 §3。
+- **有缓存**：直接返回缓存中的字体（不访问字体目录），同时在后台 reconcile；有变化时发送 `fonts_changed`，右上角提示「新增 / 修改 / 删除」，用户点 Refresh 后调用 `refresh_fonts` 载入。
+- **没有可用缓存**（第一次启动或解析版本变化）：同步 reconcile，全部解析后再返回。
+
+细节见 [font-cache.md](font-cache.md)。
 
 ## 约定
 

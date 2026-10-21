@@ -16,6 +16,17 @@ pub(crate) fn map_font_file(path: &Path) -> Result<Mmap, String> {
     unsafe { Mmap::map(&file) }.map_err(|e| format!("Failed to map file: {}", e))
 }
 
+/// 解析逻辑版本。FontInfo 字段或提取规则变化时递增，缓存据此整体重新解析。
+pub const PARSER_SCHEMA_VERSION: u32 = 1;
+
+/// 目录中的一个字体文件及其用于判断变化的属性
+#[derive(Debug, Clone)]
+pub struct FontFile {
+    pub path: PathBuf,
+    pub file_size: u64,
+    pub modified_at_ns: i64,
+}
+
 pub struct FontScanner {
     font_dirs: Vec<PathBuf>,
 }
@@ -29,6 +40,10 @@ impl FontScanner {
                 Self::get_user_fonts_dir(),
             ],
         }
+    }
+
+    pub fn with_dirs(font_dirs: Vec<PathBuf>) -> Self {
+        Self { font_dirs }
     }
 
     /// 扫描的字体目录（系统 + 当前用户）
@@ -45,45 +60,55 @@ impl FontScanner {
         }
     }
 
-    /// Scan all fonts in the system and return FontState
-    pub fn scan_all_fonts(&self) -> Result<FontState, String> {
-        let mut paths = Vec::new();
+    /// 列出所有字体目录中的字体文件。不存在的目录视为空；读取失败的目录单独返回，
+    /// 调用方不能据此认定其中的文件已删除。
+    pub fn list_font_files(&self) -> (Vec<FontFile>, Vec<PathBuf>) {
+        let mut files = Vec::new();
+        let mut failed_dirs = Vec::new();
 
         for dir in &self.font_dirs {
             if !dir.exists() {
                 continue;
             }
             match fs::read_dir(dir) {
-                Ok(entries) => paths.extend(
-                    entries
-                        .filter_map(|entry| entry.ok())
-                        .map(|entry| entry.path())
-                        .filter(|path| path.is_file() && Self::is_font_file(path)),
-                ),
-                Err(e) => println!("Failed to read directory {:?}: {}", dir, e),
-            }
-        }
-
-        let results: Vec<_> = paths
-            .par_iter()
-            .map(|path| (path, self.parse_font(path)))
-            .collect();
-
-        let mut fonts = Vec::new();
-        let mut error_count = 0;
-        for (path, result) in results {
-            match result {
-                Ok(font_list) => fonts.extend(font_list),
-                Err(e) => {
-                    error_count += 1;
-                    if error_count <= 10 {
-                        println!("  Error {}: {:?}: {}", error_count, path, e);
+                Ok(entries) => files.extend(entries.filter_map(|entry| {
+                    let entry = entry.ok()?;
+                    let path = entry.path();
+                    // Windows 上 DirEntry::metadata 来自目录枚举结果，不额外访问文件
+                    let metadata = entry.metadata().ok()?;
+                    if !metadata.is_file() || !Self::is_font_file(&path) {
+                        return None;
                     }
+                    let modified_at_ns = metadata
+                        .modified()
+                        .ok()?
+                        .duration_since(SystemTime::UNIX_EPOCH)
+                        .ok()?
+                        .as_nanos() as i64;
+                    Some(FontFile {
+                        path,
+                        file_size: metadata.len(),
+                        modified_at_ns,
+                    })
+                })),
+                Err(e) => {
+                    println!("Failed to read directory {:?}: {}", dir, e);
+                    failed_dirs.push(dir.clone());
                 }
             }
         }
-        println!("Scan complete. Found {} fonts, {} errors", fonts.len(), error_count);
 
+        (files, failed_dirs)
+    }
+
+    /// 不经缓存，解析全部字体文件
+    pub fn scan_all_fonts(&self) -> Result<FontState, String> {
+        let (files, _) = self.list_font_files();
+        let fonts = files
+            .par_iter()
+            .filter_map(|file| self.parse_font(&file.path).ok())
+            .flatten()
+            .collect();
         Ok(FontState::new(fonts))
     }
 
@@ -100,7 +125,7 @@ impl FontScanner {
     }
 
     /// Parse a single font file (returns Vec because TTC files contain multiple fonts)
-    fn parse_font(&self, path: &PathBuf) -> Result<Vec<FontInfo>, String> {
+    pub(crate) fn parse_font(&self, path: &PathBuf) -> Result<Vec<FontInfo>, String> {
         let data = map_font_file(path)?;
         let metadata = fs::metadata(path).map_err(|e| format!("Failed to get metadata: {}", e))?;
 

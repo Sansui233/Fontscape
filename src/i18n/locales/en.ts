@@ -163,6 +163,10 @@ export const en = {
   "settings.scanning": "Scanning…",
   "settings.rescanDone": (families: number) => `Found ${families} families`,
   "settings.rescanFailed": (message: string) => `Rescan failed: ${message}`,
+  "fontChanges.found": (added: number, modified: number, removed: number) =>
+    `Font folders updated: ${added} new, ${modified} modified, ${removed} deleted`,
+  "fontChanges.refresh": "Refresh",
+  "fontChanges.dismiss": "Dismiss",
   "settings.fontFolders": "Font folders",
   "settings.data": "Data",
   "settings.database": "Database",

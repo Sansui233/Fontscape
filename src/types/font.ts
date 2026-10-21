@@ -47,6 +47,13 @@ export interface FontState {
   css_font_families: CssFontFamily[];
 }
 
+/** 字体目录中变化的文件数，对应 Rust FontChanges */
+export interface FontChanges {
+  added: number;
+  modified: number;
+  removed: number;
+}
+
 export interface FontMetadata {
   // OpenType Name IDs (0-20)
   copyright?: string;             // ID 0
