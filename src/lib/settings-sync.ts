@@ -30,6 +30,7 @@ function snapshotPreferences(): UserPreferences {
     font_names: ui.fontNames,
     theme: ui.theme,
     grid: ui.grid,
+    font_watch_delay_secs: ui.fontWatchDelaySecs,
   };
 }
 

@@ -13,10 +13,20 @@ use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::{Mutex, MutexGuard};
 
 /// 解析器与分类规则任一变化，缓存整体失效
 const CACHE_VERSION: i64 = (PARSER_SCHEMA_VERSION as i64) * 1000 + CLASSIFIER_VERSION as i64;
+
+/// 全局唯一的 reconcile 锁，同时保存当前数据版本。
+/// 重建数据库后新旧 FontCache 也共用这把锁，旧的 reconcile 不会写进新库。
+/// 版本到 u32 最大值后回绕到 0；前端按环形比较（差值落在前半圈即更新，同 RFC 1982）。
+static RECONCILE_LOCK: Mutex<u32> = Mutex::new(0);
+
+/// 取得 reconcile 锁。持有期间不会有 reconcile 读写缓存。
+pub fn lock() -> MutexGuard<'static, u32> {
+    RECONCILE_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+}
 
 /// 一次 reconcile 中变化的文件数
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -44,21 +54,17 @@ struct CachedFile {
 pub struct FontCache {
     database: Database,
     font_dirs: Vec<PathBuf>,
-    /// 各个克隆共用，保证同一时间只有一次 reconcile：后到的一方能看到先到的一方写入的结果
-    reconcile_lock: Arc<Mutex<()>>,
 }
 
 impl FontCache {
     pub fn new(database: Database, font_dirs: Vec<PathBuf>) -> Self {
-        Self {
-            database,
-            font_dirs,
-            reconcile_lock: Arc::default(),
-        }
+        Self { database, font_dirs }
     }
 
     /// 只读缓存，不访问字体目录。没有当前版本的缓存时返回 None。
     pub fn load(&self) -> PersistenceResult<Option<FontState>> {
+        // 持锁读取，返回的数据与版本号一致
+        let revision = lock();
         let connection = self.database.open_connection()?;
         let mut statement = connection
             .prepare("SELECT parsed_fonts_json FROM font_file_cache WHERE parser_schema_version = ?1")?;
@@ -74,12 +80,14 @@ impl FontCache {
             .filter_map(|json| serde_json::from_str::<Vec<FontInfo>>(json).ok())
             .flatten()
             .collect();
-        Ok(Some(FontState::new(fonts)))
+        let mut state = FontState::new(fonts);
+        state.revision = *revision;
+        Ok(Some(state))
     }
 
     /// force 为 true 时忽略缓存，重新解析全部文件
     pub fn reconcile(&self, force: bool) -> PersistenceResult<(FontState, FontChanges)> {
-        let _guard = self.reconcile_lock.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut revision = lock();
         let scanner = FontScanner::with_dirs(self.font_dirs.clone());
         let (files, failed_dirs) = scanner.list_font_files();
         let mut cached = self.load_rows()?;
@@ -161,9 +169,12 @@ impl FontCache {
             transaction.execute("DELETE FROM font_file_cache WHERE location_key = ?1", [key])?;
         }
         transaction.commit()?;
+        *revision = revision.wrapping_add(1);
 
         fonts.extend(parsed.into_iter().flat_map(|(_, _, result)| result));
-        Ok((FontState::new(fonts), changes))
+        let mut state = FontState::new(fonts);
+        state.revision = *revision;
+        Ok((state, changes))
     }
 
     fn load_rows(&self) -> PersistenceResult<HashMap<String, CachedFile>> {
@@ -212,9 +223,12 @@ mod tests {
         let cache = FontCache::new(database, vec![fonts.clone()]);
         assert!(cache.load().unwrap().is_none());
 
-        let (_, changes) = cache.reconcile(false).unwrap();
+        let (first, changes) = cache.reconcile(false).unwrap();
         assert_eq!(changes, FontChanges { added: 2, modified: 0, removed: 0 });
-        assert!(cache.reconcile(false).unwrap().1.is_empty());
+        let (second, changes) = cache.reconcile(false).unwrap();
+        assert!(changes.is_empty());
+        // 其他测试可能并发 reconcile，只能断言版本前进
+        assert_ne!(second.revision, first.revision);
         assert!(cache.load().unwrap().is_some());
 
         std::fs::write(fonts.join("a.ttf"), b"changed").unwrap();

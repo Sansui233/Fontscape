@@ -45,9 +45,11 @@ export interface CssFontFamily {
 export interface FontState {
   fonts: FontInfo[];
   css_font_families: CssFontFamily[];
+  /** 数据版本，每次 reconcile 后递增，到 u32 最大值后回绕；用 isNewerRevision 比较 */
+  revision: number;
 }
 
-/** 字体目录中变化的文件数，对应 Rust FontChanges */
+/** 两份 FontState 之间变化的文件数，由前端对比得出 */
 export interface FontChanges {
   added: number;
   modified: number;

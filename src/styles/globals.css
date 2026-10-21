@@ -190,9 +190,40 @@
   animation: sidebar-enter 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+/* 右上角通知：从右侧滑入；离开时滑出并收起高度，下方的通知随之平滑上移 */
+@keyframes stack-item-enter {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+.stack-item {
+  display: grid;
+  grid-template-rows: 1fr;
+  /* 只用 backwards：结束后不保留动画值，离开时的 transition 才能生效 */
+  animation: stack-item-enter 240ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  transition:
+    grid-template-rows 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 180ms ease-in,
+    transform 220ms ease-in;
+}
+
+.stack-item[data-leaving] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateX(24px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .page-enter,
-  .sidebar-enter {
+  .sidebar-enter,
+  .stack-item {
     animation: none;
+  }
+  /* 保留极短的过渡，离开时仍会触发 transitionend 以卸载元素 */
+  .stack-item {
+    transition-duration: 1ms;
   }
 }

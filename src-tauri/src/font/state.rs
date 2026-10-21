@@ -7,6 +7,9 @@ use std::collections::HashMap;
 pub struct FontState {
     pub fonts: Vec<FontInfo>,
     pub css_font_families: Vec<CssFontFamily>,
+    /// 数据版本，每次 reconcile 提交后递增（到最大值后回绕）。前端据此丢弃较旧的数据，比较规则见 cache::lock
+    #[serde(default)]
+    pub revision: u32,
 }
 
 impl FontState {
@@ -17,6 +20,7 @@ impl FontState {
         Self {
             fonts,
             css_font_families,
+            revision: 0,
         }
     }
 
@@ -101,6 +105,7 @@ impl Default for FontState {
         Self {
             fonts: Vec::new(),
             css_font_families: Vec::new(),
+            revision: 0,
         }
     }
 }

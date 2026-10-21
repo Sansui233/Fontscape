@@ -109,6 +109,8 @@ pub struct UserPreferences {
     pub font_names: FontNameMode,
     pub theme: Theme,
     pub grid: GridPreferences,
+    /// 字体目录静默多少秒后才检查变化
+    pub font_watch_delay_secs: u16,
 }
 
 impl Default for UserPreferences {
@@ -123,6 +125,7 @@ impl Default for UserPreferences {
             font_names: FontNameMode::Localized,
             theme: Theme::System,
             grid: GridPreferences::default(),
+            font_watch_delay_secs: 5,
         }
     }
 }

@@ -11,7 +11,7 @@ import { buildFolderTree, countChildren, type FolderNode } from "@/lib/folder-tr
 import { countFontFamilies, hasCriteria, sameCriteria } from "@/lib/font-filter";
 import { cn } from "@/lib/utils";
 import { folderSubtree, useFilterStore } from "@/store/filterStore";
-import { useFontStore } from "@/store/fontStore";
+import { refreshFontsWithToast, useFontStore } from "@/store/fontStore";
 import { showToast } from "@/store/toastStore";
 import { familyTagNames, useTagStore } from "@/store/tagStore";
 import { useUIStore } from "@/store/uiStore";
@@ -29,6 +29,7 @@ import {
   PanelLeft,
   Pencil,
   Plus,
+  RefreshCw,
   Settings,
   Tag as TagIcon,
   Trash2,
@@ -105,23 +106,45 @@ function SidebarHeader() {
   );
 }
 
-/** 侧栏展开时设置按钮放在底部；收起时由标题栏显示 */
+const FOOTER_BUTTON =
+  "p-1.5 rounded-md text-muted-foreground hover:bg-sidebar-hover hover:text-foreground";
+
+/** 侧栏展开时设置、刷新按钮放在底部；收起时设置由标题栏显示 */
 function SidebarFooter() {
   const collapsed = useUIStore((state) => state.sidebarCollapsed);
   const setSettingsOpen = useUIStore((state) => state.setSettingsOpen);
   const { t } = useI18n();
+  const [refreshing, setRefreshing] = useState(false);
 
   if (collapsed) return null;
 
+  async function refresh() {
+    setRefreshing(true);
+    try {
+      await refreshFontsWithToast();
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   return (
-    <div className="shrink-0 flex px-2 pb-2">
+    <div className="shrink-0 flex gap-1 px-2 pb-2">
       <button
         type="button"
         title={t("settings.tooltip", SETTINGS_SHORTCUT)}
         onClick={() => setSettingsOpen(true)}
-        className="p-1.5 rounded-md text-muted-foreground hover:bg-sidebar-hover hover:text-foreground"
+        className={FOOTER_BUTTON}
       >
         <Settings className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        title={t("fontChanges.refresh")}
+        onClick={refresh}
+        disabled={refreshing}
+        className={FOOTER_BUTTON}
+      >
+        <RefreshCw className={cn("w-4 h-4", refreshing && "animate-spin")} />
       </button>
     </div>
   );

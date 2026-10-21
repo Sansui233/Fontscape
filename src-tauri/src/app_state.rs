@@ -60,6 +60,8 @@ impl AppState {
             .services
             .write()
             .map_err(|_| "database lock poisoned".to_string())?;
+        // 等正在进行的 reconcile 结束，避免它把结果写进新库
+        let _reconcile = crate::font::cache::lock();
 
         let backup = if self.database_path.exists() {
             let timestamp = SystemTime::now()

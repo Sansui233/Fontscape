@@ -36,6 +36,7 @@ md5 = "0.7"
 rayon = "1.10"
 dashmap = "6"
 memmap2 = "0.9.11"
+notify = "8.2.0"
 
 [profile.release]
 opt-level = "z"

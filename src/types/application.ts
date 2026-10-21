@@ -40,6 +40,8 @@ export interface UserPreferences {
   font_names: FontNameMode;
   theme: Theme;
   grid: GridPreferences;
+  /** 字体目录静默多少秒后才检查变化 */
+  font_watch_delay_secs: number;
 }
 
 export interface AppInfo {

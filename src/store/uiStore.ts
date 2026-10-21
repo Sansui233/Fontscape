@@ -17,6 +17,7 @@ interface UIStore {
   theme: Theme;
   settingsOpen: boolean;
   grid: GridPreferences;
+  fontWatchDelaySecs: number;
   hydrate: (uiState: PersistedUIState, preferences: UserPreferences) => void;
   setViewMode: (mode: ViewMode) => void;
   setPreviewText: (text: string) => void;
@@ -34,6 +35,7 @@ interface UIStore {
   setFontNames: (mode: FontNameMode) => void;
   setSettingsOpen: (open: boolean) => void;
   setGrid: (patch: Partial<GridPreferences>) => void;
+  setFontWatchDelaySecs: (secs: number) => void;
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -59,6 +61,7 @@ export const useUIStore = create<UIStore>((set) => ({
     show_format: true,
     show_languages: true,
   },
+  fontWatchDelaySecs: 5,
   hydrate: (uiState, preferences) =>
     set({
       viewMode: uiState.view_mode,
@@ -72,6 +75,7 @@ export const useUIStore = create<UIStore>((set) => ({
       theme: preferences.theme,
       fontNames: preferences.font_names,
       grid: preferences.grid,
+      fontWatchDelaySecs: preferences.font_watch_delay_secs,
     }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setPreviewText: (text) => set({ previewText: text }),
@@ -101,4 +105,5 @@ export const useUIStore = create<UIStore>((set) => ({
   setFontNames: (mode) => set({ fontNames: mode }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
   setGrid: (patch) => set((state) => ({ grid: { ...state.grid, ...patch } })),
+  setFontWatchDelaySecs: (secs) => set({ fontWatchDelaySecs: secs }),
 }));

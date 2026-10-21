@@ -5,11 +5,12 @@ use crate::filters::{
     UpdateFilterInput,
 };
 use crate::font::{check_glyphs, FontCache, FontScanner, FontState, GlyphCheckResult};
+use crate::font_watch;
 use crate::persistence::{migrations::LATEST_SCHEMA_VERSION, PersistenceError};
 use crate::settings::{PersistedUiState, UserPreferences};
 use crate::tags::{Tag, TagError};
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, State};
 
 /// 返回给前端的统一错误：code 稳定、可判断；message 可直接展示
 #[derive(Debug, Serialize)]
@@ -61,9 +62,6 @@ fn with_services<T>(
     action(services)
 }
 
-/// 字体目录有变化时推给前端的事件，载荷为 FontChanges
-pub const FONTS_CHANGED_EVENT: &str = "fonts_changed";
-
 async fn run_blocking<T: Send + 'static>(
     task: impl FnOnce() -> Result<T, PersistenceError> + Send + 'static,
 ) -> CommandResult<T> {
@@ -78,7 +76,7 @@ fn font_cache(state: &State<'_, AppState>) -> CommandResult<FontCache> {
 }
 
 /// 启动时唯一的数据入口：字体、Filter、设置一次返回。
-/// 有缓存时直接返回缓存，再在后台对比字体目录，有变化时发送 fonts_changed；
+/// 有缓存时直接返回缓存，再在后台对比字体目录，有变化时发送 fonts_changed（完整 FontState）；
 /// 第一次启动（或解析版本变化）没有可用缓存，同步完成解析后再返回。
 #[tauri::command]
 pub async fn bootstrap_app(
@@ -102,13 +100,7 @@ pub async fn bootstrap_app(
     .await?;
     let font_state = match cached {
         Some(font_state) => {
-            tauri::async_runtime::spawn_blocking(move || match cache.reconcile(false) {
-                Ok((_, changes)) if !changes.is_empty() => {
-                    let _ = app.emit(FONTS_CHANGED_EVENT, changes);
-                }
-                Ok(_) => {}
-                Err(error) => println!("Background font reconcile failed: {error}"),
-            });
+            tauri::async_runtime::spawn_blocking(move || font_watch::reconcile_and_notify(&app));
             font_state
         }
         None => run_blocking(move || cache.reconcile(false)).await?.0,

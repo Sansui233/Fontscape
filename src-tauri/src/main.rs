@@ -4,6 +4,7 @@
 // Use the library crate
 use fontscape::app_state::AppState;
 use fontscape::commands::*;
+use fontscape::font::FontScanner;
 use tauri::Manager;
 
 fn main() {
@@ -12,6 +13,7 @@ fn main() {
         .setup(|app| {
             let database_path = app.path().app_data_dir()?.join("fontscape.db");
             app.manage(AppState::initialize(database_path));
+            fontscape::font_watch::start(app.handle().clone(), FontScanner::new().font_dirs().to_vec());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

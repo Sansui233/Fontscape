@@ -2,7 +2,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { errorText, LOCALE_OPTIONS, useI18n } from "@/i18n";
 import { getAppInfo, openInExplorer, resetDatabase } from "@/lib/tauri-api";
 import { cn } from "@/lib/utils";
-import { useFontStore } from "@/store/fontStore";
+import { rebuildFontsWithToast, useFontStore } from "@/store/fontStore";
 import { showToast } from "@/store/toastStore";
 import { useUIStore } from "@/store/uiStore";
 import type { AppInfo, CommandError, FontNameMode, Theme } from "@/types/application";
@@ -10,6 +10,7 @@ import { FolderOpen, Monitor, Moon, RefreshCw, Sun } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 
 const isMac = navigator.userAgent.includes("Mac");
+const WATCH_DELAY_OPTIONS = [2, 5, 10, 30, 60];
 const mod = isMac ? "⌘ " : "Ctrl + ";
 export const SETTINGS_SHORTCUT = `${mod},`;
 
@@ -109,18 +110,16 @@ function GeneralSection() {
 function LibrarySection({ info }: { info: AppInfo | null }) {
   const { t } = useI18n();
   const fontState = useFontStore((state) => state.fontState);
-  const refresh = useFontStore((state) => state.refresh);
-  const [scanning, setScanning] = useState(false);
+  const watchDelay = useUIStore((state) => state.fontWatchDelaySecs);
+  const setWatchDelay = useUIStore((state) => state.setFontWatchDelaySecs);
+  const [rebuilding, setRebuilding] = useState(false);
 
-  async function rescan() {
-    setScanning(true);
+  async function rebuild() {
+    setRebuilding(true);
     try {
-      const state = await refresh();
-      showToast(t("settings.rescanDone", state.css_font_families.length));
-    } catch (error) {
-      showToast(t("settings.rescanFailed", errorText(t, error as CommandError)), "error");
+      await rebuildFontsWithToast();
     } finally {
-      setScanning(false);
+      setRebuilding(false);
     }
   }
 
@@ -134,10 +133,23 @@ function LibrarySection({ info }: { info: AppInfo | null }) {
           fontState?.css_font_families.length ?? 0
         )}
       >
-        <ActionButton onClick={rescan} disabled={scanning}>
-          <RefreshCw className={cn("w-3.5 h-3.5", scanning && "animate-spin")} />
-          {scanning ? t("settings.scanning") : t("settings.rescan")}
+        <ActionButton onClick={rebuild} disabled={rebuilding} title={t("settings.rebuildTooltip")}>
+          <RefreshCw className={cn("w-3.5 h-3.5", rebuilding && "animate-spin")} />
+          {rebuilding ? t("settings.rebuilding") : t("settings.rebuild")}
         </ActionButton>
+      </Row>
+      <Row label={t("settings.watchDelay")} hint={t("settings.watchDelayHint")}>
+        <select
+          value={watchDelay}
+          onChange={(event) => setWatchDelay(Number(event.target.value))}
+          className="h-7 pl-2 pr-7 rounded-md border border-border bg-background text-[12px] outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+        >
+          {WATCH_DELAY_OPTIONS.map((secs) => (
+            <option key={secs} value={secs}>
+              {t("settings.seconds", secs)}
+            </option>
+          ))}
+        </select>
       </Row>
       <Row label={t("settings.fontFolders")} stacked>
         <ul className="space-y-0.5">

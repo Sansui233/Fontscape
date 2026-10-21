@@ -33,7 +33,7 @@ export function useBootstrap() {
   const run = useCallback(() => {
     setStatus({ state: "loading" });
     // 先注册监听：bootstrap 返回缓存后，后台对比可能很快就发出变化
-    pending ??= onFontsChanged((changes) => useFontStore.getState().setPendingChanges(changes)).then(
+    pending ??= onFontsChanged((state) => useFontStore.getState().setPendingState(state)).then(
       () => bootstrapApp()
     );
     pending

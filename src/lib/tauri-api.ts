@@ -13,7 +13,7 @@ import type {
   SavedFilter,
   UpdateFilterInput,
 } from "@/types/filter";
-import type { FontChanges, FontState } from "@/types/font";
+import type { FontState } from "@/types/font";
 import type { Tag } from "@/types/tag";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
@@ -47,9 +47,9 @@ export function refreshFonts(): Promise<FontState> {
   return call("refresh_fonts");
 }
 
-/** 后台对比发现字体目录有变化时触发；数据库已更新，调用 refreshFonts 取得新数据 */
-export function onFontsChanged(handler: (changes: FontChanges) => void): Promise<UnlistenFn> {
-  return listen<FontChanges>("fonts_changed", (event) => handler(event.payload));
+/** 后台对比发现字体目录有变化时触发，载荷为完整的新 FontState */
+export function onFontsChanged(handler: (state: FontState) => void): Promise<UnlistenFn> {
+  return listen<FontState>("fonts_changed", (event) => handler(event.payload));
 }
 
 export function createFilter(input: CreateFilterInput): Promise<SavedFilter> {
