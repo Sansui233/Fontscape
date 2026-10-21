@@ -87,7 +87,7 @@
 
 - ✅ **L 形框架**：侧栏和标题栏共用半透明外框（底下是 Windows Acrylic 模糊，窗口 `transparent: true` + `windowEffects: acrylic`；系统关闭「透明效果」时通过 `prefers-reduced-transparency` 改回实色），内容区是嵌在里面的白色面板，左上角圆角。去掉了原生标题栏，自绘最小化、最大化、关闭按钮，空白处可以拖动窗口。
 - ✅ **单行标题栏**：从左到右依次是：返回、当前标题和数量（Filter 名或 All Fonts）、可展开的搜索、Filter、预览文字和字号、Grid/List 切换（这四项只在 Grid/List 页显示）、设置（仅侧栏收起时）、窗口按钮。设置和「显示侧栏」按钮出现/消失时宽度过渡，相邻按钮平移。
-- ✅ **Sidebar**：macOS 风格，行高 26px；All Fonts / Languages / Saved Filters / Tags 四组，分组可以折叠；展开时淡入滑入，底部是设置和刷新按钮；侧栏收起后，鼠标移到窗口左边缘会滑出浮层。
+- ✅ **Sidebar**：macOS 风格，行高 26px；All Fonts / Languages / Saved Filters / Tags 四组，分组可以折叠；展开时淡入滑入，底部是设置和刷新按钮；在详情页点 All Fonts、筛选或标签会回到上次的 Grid / List；侧栏收起后，鼠标移到窗口左边缘会滑出浮层。
 - ✅ **卡片**：无边框，有两种模式，在字号浮层的分隔线下切换（仅 Grid 显示），设置持久化在 `preferences.grid`：
   - **极简**：只有预览和名称，无底色、内边距小，hover 时整卡浅底；名称可左 / 中 / 右对齐。
   - **详细**（默认）：预览区是浅色圆角底块，名称在块外；名称 + VAR、样式 · 分类 · 格式一行，语言标签在名称行靠右（大写缩写同 List，高度比名称行矮）。四项元数据都可以单独开关。

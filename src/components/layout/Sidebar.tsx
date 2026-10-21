@@ -35,6 +35,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { ReactNode, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 
 const SIDEBAR_WIDTH = 208;
 /** 每一级文件夹的缩进 */
@@ -189,6 +190,17 @@ function SidebarContent() {
   const [dropTarget, setDropTarget] = useState<DropTarget | undefined>(undefined);
   const [tagDropId, setTagDropId] = useState<string | null>(null);
   const setFamilyTag = useTagStore((state) => state.setFamilyTag);
+  const viewMode = useUIStore((state) => state.viewMode);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // 在详情页点筛选时，回到上次的 Grid / List 查看结果
+  function showResults(action: () => void) {
+    action();
+    if (location.pathname !== "/" && location.pathname !== "/list") {
+      navigate(viewMode === "list" ? "/list" : "/");
+    }
+  }
 
   // 计数不受搜索文字影响，只反映 Filter 本身的条件
   const counts = useMemo(() => {
@@ -407,7 +419,7 @@ function SidebarContent() {
         count={counts.get(filter.id)}
         selected={filter.id === activeFilterId}
         dimmed={dragItem?.type === "filter" && dragItem.id === filter.id}
-        onClick={() => applyFilter(filter.id)}
+        onClick={() => showResults(() => applyFilter(filter.id))}
         onContextMenu={(event) => openMenu(event, filterMenu(filter))}
         {...(isLanguage ? {} : dragProps({ type: "filter", id: filter.id }))}
       />
@@ -459,7 +471,7 @@ function SidebarContent() {
             label={t("nav.allFonts")}
             count={fontState?.css_font_families.length}
             selected={!hasCriteria(criteria)}
-            onClick={clearCriteria}
+            onClick={() => showResults(clearCriteria)}
           />
         </ul>
 
@@ -509,7 +521,7 @@ function SidebarContent() {
               count={tagCounts.get(tag.id) ?? 0}
               selected={isTagSelected(tag)}
               {...tagDropProps(tag)}
-              onClick={() => setCriteria({ ...EMPTY_FILTER_CRITERIA, tag_contains: tag.name })}
+              onClick={() => showResults(() => setCriteria({ ...EMPTY_FILTER_CRITERIA, tag_contains: tag.name }))}
               onContextMenu={(event) =>
                 openMenu(event, [
                   {
