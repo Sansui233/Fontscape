@@ -191,6 +191,7 @@ export const zhCN: Messages = {
   "settings.about": "关于",
   "settings.version": (version) => `版本 ${version}`,
   "settings.schema": "数据库结构",
+  "settings.sourceCode": "源代码",
   "settings.saveFailed": (message) => `设置保存失败：${message}`,
 
   "detail.notFound": "未找到该字体家族",

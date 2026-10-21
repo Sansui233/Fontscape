@@ -191,6 +191,7 @@ export const ja: Messages = {
   "settings.about": "このアプリについて",
   "settings.version": (version) => `バージョン ${version}`,
   "settings.schema": "データベース構造",
+  "settings.sourceCode": "ソースコード",
   "settings.saveFailed": (message) => `設定を保存できませんでした：${message}`,
 
   "detail.notFound": "フォントファミリーが見つかりません",

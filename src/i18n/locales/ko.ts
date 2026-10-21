@@ -191,6 +191,7 @@ export const ko: Messages = {
   "settings.about": "정보",
   "settings.version": (version) => `버전 ${version}`,
   "settings.schema": "데이터베이스 구조",
+  "settings.sourceCode": "소스 코드",
   "settings.saveFailed": (message) => `설정을 저장할 수 없습니다: ${message}`,
 
   "detail.notFound": "글꼴 패밀리를 찾을 수 없습니다",

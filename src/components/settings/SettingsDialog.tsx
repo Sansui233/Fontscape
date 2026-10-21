@@ -1,15 +1,16 @@
 import { Dialog } from "@/components/ui/Dialog";
 import { errorText, LOCALE_OPTIONS, useI18n } from "@/i18n";
-import { getAppInfo, openInExplorer, resetDatabase } from "@/lib/tauri-api";
+import { getAppInfo, openInExplorer, openUrl, resetDatabase } from "@/lib/tauri-api";
 import { cn } from "@/lib/utils";
 import { rebuildFontsWithToast, useFontStore } from "@/store/fontStore";
 import { showToast } from "@/store/toastStore";
 import { useUIStore } from "@/store/uiStore";
 import type { AppInfo, CommandError, FontNameMode, Theme } from "@/types/application";
-import { FolderOpen, Monitor, Moon, RefreshCw, Sun } from "lucide-react";
+import { ExternalLink, FolderOpen, Monitor, Moon, RefreshCw, Sun } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 
 const isMac = navigator.userAgent.includes("Mac");
+const REPOSITORY_URL = "https://github.com/Sansui233/Fontscape";
 const WATCH_DELAY_OPTIONS = [2, 5, 10, 30, 60];
 const mod = isMac ? "⌘ " : "Ctrl + ";
 export const SETTINGS_SHORTCUT = `${mod},`;
@@ -50,6 +51,12 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           </Row>
           <Row label={t("settings.schema")}>
             <span className="tabular-nums text-muted-foreground">v{info?.schema_version ?? "…"}</span>
+          </Row>
+          <Row label={t("settings.sourceCode")}>
+            <ActionButton onClick={() => openUrl(REPOSITORY_URL).catch(() => {})}>
+              <ExternalLink className="w-3.5 h-3.5" />
+              GitHub
+            </ActionButton>
           </Row>
         </Section>
       </div>

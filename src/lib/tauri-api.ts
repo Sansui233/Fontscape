@@ -17,6 +17,7 @@ import type { FontState } from "@/types/font";
 import type { Tag } from "@/types/tag";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { open } from "@tauri-apps/plugin-shell";
 
 /** 把 invoke 抛出的任意值统一为 CommandError */
 export function toCommandError(error: unknown): CommandError {
@@ -132,4 +133,8 @@ export function checkGlyphsInFont(
 
 export function openInExplorer(path: string): Promise<void> {
   return call("open_in_explorer", { path });
+}
+
+export function openUrl(url: string): Promise<void> {
+  return open(url);
 }

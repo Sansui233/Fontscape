@@ -4,7 +4,7 @@ version = "0.4.0"
 description = "Modern font management tool for Windows"
 authors = ["you"]
 license = ""
-repository = ""
+repository = "https://github.com/Sansui233/Fontscape"
 edition = "2021"
 
 [build-dependencies]

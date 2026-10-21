@@ -193,6 +193,7 @@ export const en = {
   "settings.about": "About",
   "settings.version": (version: string) => `Version ${version}`,
   "settings.schema": "Database schema",
+  "settings.sourceCode": "Source code",
   "settings.saveFailed": (message: string) => `Settings could not be saved: ${message}`,
 
   "detail.notFound": "Font family not found",
